@@ -1,6 +1,3 @@
-import * as THREE from 'three';
-import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls.js';
-
 // Game Configuration Constants
 export const ROOM = 20;      // Room size (width/length)
 export const WALL_H = 6;     // Wall height
@@ -79,7 +76,7 @@ export class Game {
         document.body.appendChild(this.renderer.domElement);
         
         // Initialize controls
-        this.controls = new PointerLockControls(this.camera, document.body);
+        this.controls = new THREE.PointerLockControls(this.camera, document.body);
         
         // Initialize managers
         this.levelManager = new LevelManager(this.scene);

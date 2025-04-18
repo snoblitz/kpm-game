@@ -60,6 +60,9 @@
       transition: opacity 0.15s;
     }
   </style>
+  <!-- Three.js and controls -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.152.2/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.152.2/examples/js/controls/PointerLockControls.js"></script>
 </head>
 <body>
   <!-- HUD Elements -->
@@ -70,14 +73,6 @@
   <div id="fxHit"></div>
 
   <!-- Game Scripts -->
-  <script type="importmap">
-    {
-      "imports": {
-        "three": "https://cdn.skypack.dev/three@0.152.2",
-        "three/examples/": "https://cdn.skypack.dev/three@0.152.2/examples/"
-      }
-    }
-  </script>
   <script type="module">
     // Import all modules
     import { ROOM, WALL_H, ENEMIES_PER_LEVEL } from './js/game.js';
