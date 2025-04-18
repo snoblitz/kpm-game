@@ -114,6 +114,9 @@ export class Game {
         
         // Start game loop
         this.animate();
+        
+        // Force initial render
+        this.render();
     }
 
     animate() {

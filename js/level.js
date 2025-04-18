@@ -65,17 +65,17 @@ export class LevelManager {
     this.scene.add(westWall);
     this.walls.push(westWall);
 
-    // Add exit door
+    // Add door
     this.addDoor();
   }
 
   addDoor() {
-    // Create a green door that players need to shoot to progress
+    // Create door
     const doorGeometry = new THREE.BoxGeometry(2, 3, 0.5);
     const doorMaterial = new THREE.MeshLambertMaterial({ color: 0x00ff00 });
     this.door = new THREE.Mesh(doorGeometry, doorMaterial);
     
-    // Position the door randomly on one of the walls
+    // Position door on a random wall
     const wallChoice = Math.floor(Math.random() * 4);
     switch(wallChoice) {
       case 0: // North wall
