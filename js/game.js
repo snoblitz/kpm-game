@@ -1,4 +1,5 @@
 import { PointerLockControls } from './PointerLockControls.js';
+import { LevelManager } from './level.js';
 
 // Game Configuration Constants
 export const ROOM = 20;      // Room size (width/length)
@@ -82,6 +83,7 @@ export class Game {
         
         // Initialize managers
         this.levelManager = new LevelManager(this.scene);
+        this.colliders = this.levelManager.getColliders();
         this.enemyManager = new EnemyManager(this.scene);
         this.bossManager = new BossManager(this.scene, this);
         this.player = new Player(this.camera, this.controls);

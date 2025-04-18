@@ -10,12 +10,103 @@ export class LevelManager {
   constructor(scene) {
     this.scene = scene;
     this.currentLevel = 1;
-    this.colliders = [];
-    this.brickTexture = makeBrickTexture();
-    this.materials = {
-      wall: new THREE.MeshLambertMaterial({ map: this.brickTexture, color: 0x888888 }),
-      floor: new THREE.MeshLambertMaterial({ color: 0x404040 })
-    };
+    this.walls = [];
+    this.door = null;
+    this.generateLevel();
+  }
+
+  generateLevel() {
+    // Clear existing level
+    this.walls.forEach(wall => this.scene.remove(wall));
+    this.walls = [];
+    if (this.door) this.scene.remove(this.door);
+
+    // Create floor
+    const floor = new THREE.Mesh(
+      new THREE.PlaneGeometry(ROOM * 2, ROOM * 2),
+      new THREE.MeshLambertMaterial({ color: 0x808080 })
+    );
+    floor.rotation.x = -Math.PI / 2;
+    floor.receiveShadow = true;
+    this.scene.add(floor);
+    this.walls.push(floor);
+
+    // Create walls
+    const wallGeometry = new THREE.BoxGeometry(ROOM * 2, WALL_H, 1);
+    const wallMaterial = new THREE.MeshLambertMaterial({ color: 0x808080 });
+
+    // North wall
+    const northWall = new THREE.Mesh(wallGeometry, wallMaterial);
+    northWall.position.set(0, WALL_H / 2, -ROOM);
+    northWall.castShadow = northWall.receiveShadow = true;
+    this.scene.add(northWall);
+    this.walls.push(northWall);
+
+    // South wall
+    const southWall = new THREE.Mesh(wallGeometry, wallMaterial);
+    southWall.position.set(0, WALL_H / 2, ROOM);
+    southWall.castShadow = southWall.receiveShadow = true;
+    this.scene.add(southWall);
+    this.walls.push(southWall);
+
+    // East wall
+    const eastWall = new THREE.Mesh(wallGeometry, wallMaterial);
+    eastWall.rotation.y = Math.PI / 2;
+    eastWall.position.set(ROOM, WALL_H / 2, 0);
+    eastWall.castShadow = eastWall.receiveShadow = true;
+    this.scene.add(eastWall);
+    this.walls.push(eastWall);
+
+    // West wall
+    const westWall = new THREE.Mesh(wallGeometry, wallMaterial);
+    westWall.rotation.y = Math.PI / 2;
+    westWall.position.set(-ROOM, WALL_H / 2, 0);
+    westWall.castShadow = westWall.receiveShadow = true;
+    this.scene.add(westWall);
+    this.walls.push(westWall);
+
+    // Add exit door
+    this.addDoor();
+  }
+
+  addDoor() {
+    // Create a green door that players need to shoot to progress
+    const doorGeometry = new THREE.BoxGeometry(2, 3, 0.5);
+    const doorMaterial = new THREE.MeshLambertMaterial({ color: 0x00ff00 });
+    this.door = new THREE.Mesh(doorGeometry, doorMaterial);
+    
+    // Position the door randomly on one of the walls
+    const wallChoice = Math.floor(Math.random() * 4);
+    switch(wallChoice) {
+      case 0: // North wall
+        this.door.position.set(Math.random() * ROOM - ROOM/2, 1.5, -ROOM + 0.5);
+        break;
+      case 1: // South wall
+        this.door.position.set(Math.random() * ROOM - ROOM/2, 1.5, ROOM - 0.5);
+        this.door.rotation.y = Math.PI;
+        break;
+      case 2: // East wall
+        this.door.position.set(ROOM - 0.5, 1.5, Math.random() * ROOM - ROOM/2);
+        this.door.rotation.y = -Math.PI / 2;
+        break;
+      case 3: // West wall
+        this.door.position.set(-ROOM + 0.5, 1.5, Math.random() * ROOM - ROOM/2);
+        this.door.rotation.y = Math.PI / 2;
+        break;
+    }
+    
+    this.door.userData.isDoor = true;
+    this.door.castShadow = this.door.receiveShadow = true;
+    this.scene.add(this.door);
+  }
+
+  nextLevel() {
+    this.currentLevel++;
+    this.generateLevel();
+  }
+
+  getColliders() {
+    return [...this.walls, this.door];
   }
 
   /**
@@ -203,13 +294,5 @@ export class LevelManager {
    */
   getCurrentLevel() {
     return this.currentLevel;
-  }
-
-  /**
-   * Get all colliders
-   * @returns {Array} Array of colliders
-   */
-  getColliders() {
-    return this.colliders;
   }
 } 
