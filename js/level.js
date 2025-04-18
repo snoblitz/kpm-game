@@ -1,4 +1,4 @@
-import { ROOM, WALL_H, ENEMIES_PER_LEVEL } from './game.js';
+import { ROOM, WALL_H, ENEMIES_PER_LEVEL } from './constants.js';
 import { makeBrickTexture } from './textures.js';
 import { playSound } from './audio.js';
 

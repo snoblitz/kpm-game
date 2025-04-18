@@ -70,13 +70,10 @@
   <div id="crosshair"></div>
   <div id="fxHit"></div>
 
-  <!-- Three.js -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.152.2/three.js"></script>
-
   <!-- Game Scripts -->
   <script type="module">
     // Import all modules
-    import { ROOM, WALL_H, ENEMIES_PER_LEVEL } from './js/game.js';
+    import { ROOM, WALL_H, ENEMIES_PER_LEVEL } from './js/constants.js';
     import { measureDistance, updateBestStats } from './js/utils.js';
     import { makeBrickTexture, spawnTracer, spawnSpark } from './js/textures.js';
     import { playSound, playComboSound } from './js/audio.js';

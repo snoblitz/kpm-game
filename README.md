@@ -6,7 +6,7 @@ A fast-paced 3D browser game where you fight through increasingly difficult leve
 
 🎮 [Play KPM Game](https://snoblitz.github.io/KPM-Game/)
 
-## Features (More Soon!)
+## Features
 
 - First-person shooter gameplay
 - Multiple levels with increasing difficulty
