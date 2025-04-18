@@ -57,9 +57,14 @@ export class Game {
         
         // Initialize Three.js scene
         this.scene = new THREE.Scene();
+        this.scene.background = new THREE.Color(0x87CEEB); // Sky blue background
+        
         this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        this.renderer = new THREE.WebGLRenderer();
+        this.camera.position.set(0, 2, 0); // Set initial camera position
+        
+        this.renderer = new THREE.WebGLRenderer({ antialias: true });
         this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.renderer.shadowMap.enabled = true;
         document.body.appendChild(this.renderer.domElement);
         
         // Add lights
@@ -68,10 +73,12 @@ export class Game {
         
         const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
         directionalLight.position.set(1, 1, 1).normalize();
+        directionalLight.castShadow = true;
         this.scene.add(directionalLight);
         
         // Initialize controls
         this.controls = new PointerLockControls(this.camera, document.body);
+        this.scene.add(this.controls.getObject());
         
         // Set up keyboard event listeners
         document.addEventListener('keydown', (e) => this.keys[e.key.toLowerCase()] = true);
@@ -90,6 +97,10 @@ export class Game {
         this.enemyManager = new EnemyManager(this.scene);
         this.bossManager = new BossManager(this.scene, this);
         this.player = new Player(this.camera, this.controls);
+        
+        // Start timer
+        this.startTime = performance.now();
+        this.updateTimer();
         
         // Start game loop
         this.animate();
@@ -115,5 +126,16 @@ export class Game {
 
     render() {
         this.renderer.render(this.scene, this.camera);
+    }
+
+    updateTimer() {
+        const now = performance.now();
+        const elapsed = (now - this.startTime) / 1000;
+        const minutes = Math.floor(elapsed / 60);
+        const seconds = Math.floor(elapsed % 60);
+        const milliseconds = Math.floor((elapsed % 1) * 100);
+        document.getElementById('timer').textContent = 
+            `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${milliseconds.toString().padStart(2, '0')}`;
+        requestAnimationFrame(() => this.updateTimer());
     }
 } 
