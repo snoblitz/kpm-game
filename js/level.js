@@ -24,7 +24,7 @@ export class LevelManager {
     // Create floor
     const floor = new THREE.Mesh(
       new THREE.PlaneGeometry(ROOM * 2, ROOM * 2),
-      new THREE.MeshLambertMaterial({ color: 0x808080 })
+      new THREE.MeshLambertMaterial({ color: 0x404040 })
     );
     floor.rotation.x = -Math.PI / 2;
     floor.receiveShadow = true;
@@ -33,12 +33,13 @@ export class LevelManager {
 
     // Create walls
     const wallGeometry = new THREE.BoxGeometry(ROOM * 2, WALL_H, 1);
-    const wallMaterial = new THREE.MeshLambertMaterial({ color: 0x808080 });
+    const wallMaterial = new THREE.MeshLambertMaterial({ color: 0x8B4513 });  // Saddle brown for walls
 
     // North wall
     const northWall = new THREE.Mesh(wallGeometry, wallMaterial);
     northWall.position.set(0, WALL_H / 2, -ROOM);
     northWall.castShadow = northWall.receiveShadow = true;
+    northWall.geometry.computeBoundingBox();
     this.scene.add(northWall);
     this.walls.push(northWall);
 
@@ -46,6 +47,7 @@ export class LevelManager {
     const southWall = new THREE.Mesh(wallGeometry, wallMaterial);
     southWall.position.set(0, WALL_H / 2, ROOM);
     southWall.castShadow = southWall.receiveShadow = true;
+    southWall.geometry.computeBoundingBox();
     this.scene.add(southWall);
     this.walls.push(southWall);
 
@@ -54,6 +56,7 @@ export class LevelManager {
     eastWall.rotation.y = Math.PI / 2;
     eastWall.position.set(ROOM, WALL_H / 2, 0);
     eastWall.castShadow = eastWall.receiveShadow = true;
+    eastWall.geometry.computeBoundingBox();
     this.scene.add(eastWall);
     this.walls.push(eastWall);
 
@@ -62,6 +65,7 @@ export class LevelManager {
     westWall.rotation.y = Math.PI / 2;
     westWall.position.set(-ROOM, WALL_H / 2, 0);
     westWall.castShadow = westWall.receiveShadow = true;
+    westWall.geometry.computeBoundingBox();
     this.scene.add(westWall);
     this.walls.push(westWall);
 
@@ -97,6 +101,7 @@ export class LevelManager {
     
     this.door.userData.isDoor = true;
     this.door.castShadow = this.door.receiveShadow = true;
+    this.door.geometry.computeBoundingBox();
     this.scene.add(this.door);
   }
 
