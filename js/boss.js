@@ -1,5 +1,5 @@
-import { BOSS_SPEED, BASE_BOSS_HEALTH, MIN_BOSS_HEALTH } from './utils.js';
-import { checkBossCollision } from './collision.js';
+import { BOSS_SPEED, BASE_BOSS_HEALTH, MIN_BOSS_HEALTH } from './game.js';
+import { checkBossCollision, blocked } from './collision.js';
 import { createBossHealthBar, updateBossHealthBar } from './ui.js';
 import { spawnSpark } from './textures.js';
 import { playSound } from './audio.js';
@@ -74,8 +74,9 @@ export class Boss {
  * Manages boss state and behavior
  */
 export class BossManager {
-  constructor(scene) {
+  constructor(scene, game) {
     this.scene = scene;
+    this.game = game;
     this.boss = null;
     this.isBossFight = false;
     this.startTime = null;
@@ -144,7 +145,7 @@ export class BossManager {
       
       return {
         time: (this.endTime - this.startTime) / 1000,
-        accuracy: (this.hits / (shotsFired - (shotsHit - this.hits))) * 100,
+        accuracy: (this.hits / (this.game.shotsFired - (this.game.shotsHit - this.hits))) * 100,
         dps: this.damageDealt / ((this.endTime - this.startTime) / 1000),
         hits: this.hits,
         damage: this.damageDealt

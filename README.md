@@ -2,6 +2,10 @@
 
 A fast-paced 3D browser game where you fight through increasingly difficult levels of enemies. Built with Three.js.
 
+## Play Now!
+
+🎮 [Play KPM Game](https://snoblitz.github.io/KPM-Game/)
+
 ## Features (More Soon!)
 
 - First-person shooter gameplay
@@ -27,10 +31,6 @@ This game is built using:
 - Vanilla JavaScript (ES6+)
 - HTML5 and CSS3
 
-## Play Online
-
-You can play the game online at: [Game URL will be added after deployment]
-
 ## Local Development
 
 To run the game locally:
@@ -38,6 +38,10 @@ To run the game locally:
 2. Open the project folder
 3. Start a local server (e.g., using VS Code's Live Server)
 4. Open your browser and navigate to the local server address
+
+## Contributing
+
+Feel free to submit issues and enhancement requests!
 
 ## License
 
