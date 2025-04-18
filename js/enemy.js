@@ -1,3 +1,4 @@
+import { ROOM } from './game.js';
 import { checkEnemyCollision } from './collision.js';
 import { spawnSpark } from './textures.js';
 import { playSound, playComboSound } from './audio.js';
@@ -7,14 +8,14 @@ import { playSound, playComboSound } from './audio.js';
  * Manages enemy behavior and state
  */
 export class Enemy {
-  constructor(scene, position, speed) {
+  constructor(scene, position) {
     this.mesh = new THREE.Mesh(
-      new THREE.BoxGeometry(1, 1, 1),
-      new THREE.MeshLambertMaterial({ color: 0xaa0000 })
+      new THREE.BoxGeometry(0.5, 0.5, 0.5),
+      new THREE.MeshLambertMaterial({ color: 0xff0000 })
     );
     this.mesh.position.copy(position);
     this.mesh.userData.dir = Math.random() * Math.PI * 2;
-    this.mesh.userData.speed = speed;
+    this.mesh.userData.isEnemy = true;
     this.mesh.castShadow = this.mesh.receiveShadow = true;
     scene.add(this.mesh);
   }
@@ -25,13 +26,13 @@ export class Enemy {
    * @param {Array} colliders - Array of collidable objects
    */
   update(dt, colliders) {
-    const step = this.mesh.userData.speed * dt;
+    const step = 4 * dt; // Base enemy speed
     const nx = this.mesh.position.x + Math.cos(this.mesh.userData.dir) * step;
     const nz = this.mesh.position.z + Math.sin(this.mesh.userData.dir) * step;
     
-    const newPos = new THREE.Vector3(nx, 0.5, nz);
+    const newPos = new THREE.Vector3(nx, 0.25, nz);
     if (checkEnemyCollision(newPos, colliders)) {
-      this.mesh.userData.dir += Math.PI;  // Reverse direction on collision
+      this.mesh.userData.dir += Math.PI / 2;  // Turn 90 degrees on collision
     } else {
       this.mesh.position.copy(newPos);
     }
@@ -74,16 +75,29 @@ export class EnemyManager {
     this.enemies = [];
     this.lastKillTime = 0;
     this.comboCount = 0;
+    this.spawnEnemies(5); // Start with 5 enemies
   }
 
-  /**
-   * Spawn a new enemy
-   * @param {THREE.Vector3} position - Spawn position
-   * @param {number} speed - Enemy speed
-   */
-  spawnEnemy(position, speed) {
-    const enemy = new Enemy(this.scene, position, speed);
-    this.enemies.push(enemy);
+  spawnEnemies(count) {
+    for (let i = 0; i < count; i++) {
+      let position;
+      do {
+        position = new THREE.Vector3(
+          (Math.random() - 0.5) * ROOM * 1.5,
+          0.25,
+          (Math.random() - 0.5) * ROOM * 1.5
+        );
+      } while (this.isPositionOccupied(position));
+
+      const enemy = new Enemy(this.scene, position);
+      this.enemies.push(enemy);
+    }
+  }
+
+  isPositionOccupied(position) {
+    return this.enemies.some(enemy => 
+      enemy.mesh.position.distanceTo(position) < 1
+    );
   }
 
   /**
@@ -134,5 +148,17 @@ export class EnemyManager {
   clear() {
     this.enemies.forEach(enemy => this.scene.remove(enemy.mesh));
     this.enemies = [];
+  }
+
+  removeEnemy(enemy) {
+    const index = this.enemies.indexOf(enemy);
+    if (index > -1) {
+      this.scene.remove(enemy.mesh);
+      this.enemies.splice(index, 1);
+    }
+  }
+
+  getEnemies() {
+    return this.enemies;
   }
 } 
