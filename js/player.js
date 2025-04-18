@@ -1,4 +1,5 @@
-import * as THREE from 'three';
+// Import Three.js from CDN
+const THREE = window.THREE;
 import { WALK, RUN, GRAV, JUMP, RADIUS } from './constants.js';
 import { blocked } from './collision.js';
 
