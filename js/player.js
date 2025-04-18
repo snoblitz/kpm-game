@@ -34,19 +34,29 @@ export class Player {
             this.onGround = true;
         }
 
+        // Calculate movement direction based on key inputs
+        const moveDirection = new THREE.Vector3();
+        if (keys.w) moveDirection.z -= 1;
+        if (keys.s) moveDirection.z += 1;
+        if (keys.a) moveDirection.x -= 1;
+        if (keys.d) moveDirection.x += 1;
+        
+        // Normalize movement vector
+        if (moveDirection.length() > 0) {
+            moveDirection.normalize();
+        }
+
         // Get movement direction from keys
         const speed = keys.shift ? RUN : WALK;
-        const forward = (keys.w ? 1 : 0) - (keys.s ? 1 : 0);
-        const right = (keys.d ? 1 : 0) - (keys.a ? 1 : 0);
 
         // Calculate movement vector based on camera direction
-        if (forward !== 0 || right !== 0) {
+        if (moveDirection.length() > 0) {
             const angle = this.controls.getObject().rotation.y;
             const sin = Math.sin(angle);
             const cos = Math.cos(angle);
             
-            const moveX = (forward * sin - right * cos) * speed * dt;
-            const moveZ = (forward * cos + right * sin) * speed * dt;
+            const moveX = (moveDirection.x * sin - moveDirection.z * cos) * speed * dt;
+            const moveZ = (moveDirection.x * cos + moveDirection.z * sin) * speed * dt;
 
             // Check collisions before moving
             const newX = this.position.x + moveX;

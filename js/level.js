@@ -24,7 +24,7 @@ export class LevelManager {
     this.walls = [];
     if (this.door) this.scene.remove(this.door);
 
-    // Create sun and main light
+    // Create sun and main light if they don't exist
     if (!this.sunLight) {
       this.sunLight = new THREE.DirectionalLight(0xffffaa, 1.5);
       this.sunLight.position.set(20, 20, 20);

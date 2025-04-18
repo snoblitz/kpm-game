@@ -182,9 +182,12 @@ export class Game {
         // Check for hits with the door
         const doorHits = this.raycaster.intersectObject(this.levelManager.door);
         if (doorHits.length > 0) {
-            this.levelManager.nextLevel();
-            this.enemyManager.spawnEnemies(this.levelManager.getEnemyCount());
-            document.getElementById('remaining').textContent = `Enemies: ${this.enemyManager.getEnemyCount()}`;
+            // Only proceed to next level if all enemies are dead
+            if (this.enemyManager.getEnemyCount() === 0) {
+                this.levelManager.nextLevel();
+                this.enemyManager.spawnEnemies(this.levelManager.getEnemyCount());
+                document.getElementById('remaining').textContent = `Enemies: ${this.enemyManager.getEnemyCount()}`;
+            }
         }
     }
 }
