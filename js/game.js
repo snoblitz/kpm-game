@@ -1,6 +1,7 @@
 import { PointerLockControls } from './PointerLockControls.js';
 import { LevelManager } from './level.js';
 import { EnemyManager } from './enemy.js';
+import { BossManager } from './boss.js';
 
 // Game Configuration Constants
 export const ROOM = 20;      // Room size (width/length)

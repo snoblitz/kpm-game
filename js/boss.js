@@ -1,6 +1,5 @@
-import { BOSS_SPEED, BASE_BOSS_HEALTH, MIN_BOSS_HEALTH } from './game.js';
-import { checkBossCollision, blocked } from './collision.js';
-import { createBossHealthBar, updateBossHealthBar } from './ui.js';
+import { ROOM, BASE_BOSS_HEALTH, MIN_BOSS_HEALTH, BOSS_SPEED } from './game.js';
+import { checkBossCollision } from './collision.js';
 import { spawnSpark } from './textures.js';
 import { playSound } from './audio.js';
 
@@ -10,62 +9,100 @@ import { playSound } from './audio.js';
  */
 export class Boss {
   constructor(scene, position) {
+    // Create boss mesh - larger and more intimidating than regular enemies
     this.mesh = new THREE.Mesh(
-      new THREE.BoxGeometry(0.5, 0.5, 0.5),
-      new THREE.MeshLambertMaterial({ color: 0xff0000 })
+      new THREE.BoxGeometry(2, 2, 2),
+      new THREE.MeshLambertMaterial({ color: 0x8B0000 }) // Dark red
     );
     this.mesh.position.copy(position);
-    this.mesh.userData.dir = Math.random() * Math.PI * 2;
     this.mesh.userData.isBoss = true;
     this.mesh.castShadow = this.mesh.receiveShadow = true;
-    scene.add(this.mesh);
 
-    this.healthBar = createBossHealthBar();
-    scene.add(this.healthBar.sprite);
+    // Add glow effect
+    const glowGeometry = new THREE.BoxGeometry(2.2, 2.2, 2.2);
+    const glowMaterial = new THREE.MeshBasicMaterial({
+      color: 0xff0000,
+      transparent: true,
+      opacity: 0.3
+    });
+    this.glow = new THREE.Mesh(glowGeometry, glowMaterial);
+    this.mesh.add(this.glow);
+
+    scene.add(this.mesh);
+    this.health = BASE_BOSS_HEALTH;
+    this.targetPosition = null;
+    this.scene = scene;
   }
 
   /**
    * Update boss position and handle collisions
    * @param {number} dt - Delta time
+   * @param {THREE.Vector3} playerPosition - Player's position
    * @param {Array} colliders - Array of collidable objects
    */
-  update(dt, colliders) {
-    const step = BOSS_SPEED * dt;
-    const nx = this.mesh.position.x + Math.cos(this.mesh.userData.dir) * step;
-    const nz = this.mesh.position.z + Math.sin(this.mesh.userData.dir) * step;
-    
-    const newPos = new THREE.Vector3(nx, 0.25, nz);
-    if (checkBossCollision(newPos, colliders)) {
-      this.mesh.userData.dir += Math.PI;  // Reverse direction on collision
-    } else {
-      this.mesh.position.copy(newPos);
+  update(dt, playerPosition, colliders) {
+    // Update target position periodically
+    if (!this.targetPosition || this.mesh.position.distanceTo(this.targetPosition) < 1) {
+      this.targetPosition = this.getNewTargetPosition(playerPosition);
     }
 
-    // Update health bar position
-    this.healthBar.sprite.position.set(
-      this.mesh.position.x,
-      this.mesh.position.y + 1,
-      this.mesh.position.z
-    );
+    // Move towards target
+    const direction = new THREE.Vector3()
+      .subVectors(this.targetPosition, this.mesh.position)
+      .normalize();
+    
+    const step = BOSS_SPEED * dt;
+    const newPosition = new THREE.Vector3()
+      .copy(this.mesh.position)
+      .add(direction.multiplyScalar(step));
+
+    // Check for collisions
+    if (!checkBossCollision(newPosition, colliders)) {
+      this.mesh.position.copy(newPosition);
+    } else {
+      this.targetPosition = this.getNewTargetPosition(playerPosition);
+    }
+
+    // Update glow effect
+    const glowIntensity = 0.3 + 0.1 * Math.sin(performance.now() * 0.003);
+    this.glow.material.opacity = glowIntensity;
+  }
+
+  getNewTargetPosition(playerPosition) {
+    // 70% chance to move towards player, 30% chance to move to random position
+    if (Math.random() < 0.7) {
+      return new THREE.Vector3(
+        playerPosition.x + (Math.random() - 0.5) * 5,
+        1,
+        playerPosition.z + (Math.random() - 0.5) * 5
+      );
+    } else {
+      return new THREE.Vector3(
+        (Math.random() - 0.5) * ROOM * 1.5,
+        1,
+        (Math.random() - 0.5) * ROOM * 1.5
+      );
+    }
   }
 
   /**
    * Handle boss hit
-   * @param {number} damage - Amount of damage to deal
+   * @param {number} amount - Amount of damage to deal
+   * @param {THREE.Vector3} hitPoint - Point of impact
    * @returns {boolean} True if boss was defeated
    */
-  handleHit(damage) {
-    this.health -= damage;
-    updateBossHealthBar(this.healthBar, this.health, this.maxHealth);
+  takeDamage(amount, hitPoint) {
+    this.health -= amount;
+    spawnSpark(this.scene, hitPoint);
+    playSound('boss-hit');
     
-    if (this.health <= 0) {
-      this.scene.remove(this.mesh);
-      this.scene.remove(this.healthBar.sprite);
-      playSound('endwin');
-      return true;
-    }
-    
-    return false;
+    // Visual feedback
+    this.mesh.material.emissive.setHex(0xff0000);
+    setTimeout(() => {
+      this.mesh.material.emissive.setHex(0x000000);
+    }, 100);
+
+    return this.health <= 0;
   }
 }
 
@@ -79,39 +116,24 @@ export class BossManager {
     this.game = game;
     this.boss = null;
     this.isBossFight = false;
-    this.startTime = null;
-    this.endTime = null;
-    this.hits = 0;
     this.damageDealt = 0;
   }
 
   /**
-   * Spawn a new boss
-   * @param {number} clearTime - Time taken to clear the level
+   * Start a new boss fight
    */
-  spawnBoss(clearTime) {
+  startBossFight() {
+    // Calculate boss health based on how quickly player cleared the level
+    const timeBonus = Math.max(0, 30000 - (performance.now() - this.game.startTime));
+    const health = Math.max(MIN_BOSS_HEALTH, BASE_BOSS_HEALTH - timeBonus / 1000);
+
+    // Spawn boss in center of room
+    this.boss = new Boss(this.scene, new THREE.Vector3(0, 1, 0));
+    this.boss.health = health;
     this.isBossFight = true;
-    this.startTime = performance.now();
-    this.hits = 0;
     this.damageDealt = 0;
-    
-    // Calculate boss health based on clear speed
-    const timeBonus = Math.max(0, 30 - clearTime);  // Bonus for clearing under 30 seconds
-    const maxHealth = Math.max(MIN_BOSS_HEALTH, BASE_BOSS_HEALTH - timeBonus);
-    
-    // Create boss at random position
-    let position;
-    do {
-      position = new THREE.Vector3(
-        (Math.random() - 0.5) * ROOM * 1.5,
-        0.25,
-        (Math.random() - 0.5) * ROOM * 1.5
-      );
-    } while (blocked(position.x, position.z, colliders));
-    
-    this.boss = new Boss(this.scene, position);
-    this.boss.health = maxHealth;
-    this.boss.maxHealth = maxHealth;
+
+    playSound('boss-spawn');
   }
 
   /**
@@ -120,39 +142,48 @@ export class BossManager {
    * @param {Array} colliders - Array of collidable objects
    */
   update(dt, colliders) {
-    if (this.boss) {
-      this.boss.update(dt, colliders);
+    if (this.isBossFight && this.boss) {
+      this.boss.update(dt, this.game.camera.position, colliders);
     }
   }
 
   /**
    * Handle boss hit
    * @param {THREE.Vector3} hitPoint - Point of impact
-   * @returns {Object|null} Boss fight statistics if boss was defeated
+   * @returns {boolean} True if boss was defeated
    */
-  handleBossHit(hitPoint) {
-    if (!this.boss) return null;
+  handleHit(hitPoint) {
+    if (!this.boss) return false;
 
     const damage = 10;
-    this.hits++;
     this.damageDealt += damage;
-    
-    spawnSpark(this.scene, hitPoint);
-    
-    if (this.boss.handleHit(damage)) {
-      this.endTime = performance.now();
-      this.isBossFight = false;
-      
-      return {
-        time: (this.endTime - this.startTime) / 1000,
-        accuracy: (this.hits / (this.game.shotsFired - (this.game.shotsHit - this.hits))) * 100,
-        dps: this.damageDealt / ((this.endTime - this.startTime) / 1000),
-        hits: this.hits,
-        damage: this.damageDealt
-      };
+    const isDead = this.boss.takeDamage(damage, hitPoint);
+
+    if (isDead) {
+      this.endBossFight();
+      return true;
     }
-    
-    return null;
+    return false;
+  }
+
+  /**
+   * End the current boss fight
+   */
+  endBossFight() {
+    if (this.boss) {
+      this.scene.remove(this.boss.mesh);
+      this.boss = null;
+    }
+    this.isBossFight = false;
+    playSound('boss-death');
+  }
+
+  /**
+   * Get the current health of the boss
+   * @returns {number} Boss health
+   */
+  getBossHealth() {
+    return this.boss ? this.boss.health : 0;
   }
 
   /**
@@ -161,7 +192,6 @@ export class BossManager {
   clear() {
     if (this.boss) {
       this.scene.remove(this.boss.mesh);
-      this.scene.remove(this.boss.healthBar.sprite);
       this.boss = null;
     }
     this.isBossFight = false;
