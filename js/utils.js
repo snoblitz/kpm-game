@@ -11,7 +11,7 @@ import {
   BOSS_SPEED,
   MAX_LEVELS,
   ENEMIES_PER_LEVEL
-} from './game.js';
+} from './constants.js';
 
 export {
   ROOM,
