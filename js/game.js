@@ -76,7 +76,7 @@ export class Game {
         document.body.appendChild(this.renderer.domElement);
         
         // Initialize controls
-        this.controls = new THREE.PointerLockControls(this.camera, document.body);
+        this.controls = new ThreeAddons.PointerLockControls(this.camera, document.body);
         
         // Initialize managers
         this.levelManager = new LevelManager(this.scene);

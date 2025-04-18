@@ -60,9 +60,6 @@
       transition: opacity 0.15s;
     }
   </style>
-  <!-- Three.js and controls -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.152.2/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.152.2/examples/js/controls/PointerLockControls.js"></script>
 </head>
 <body>
   <!-- HUD Elements -->
@@ -71,6 +68,14 @@
   <div id="longestKill">Longest Kill: 0.00m</div>
   <div id="crosshair"></div>
   <div id="fxHit"></div>
+
+  <!-- Three.js and controls -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.152.2/three.js"></script>
+  <script>
+    // Create a global namespace for Three.js addons
+    window.ThreeAddons = {};
+  </script>
+  <script src="https://raw.githubusercontent.com/mrdoob/three.js/r152/examples/js/controls/PointerLockControls.js"></script>
 
   <!-- Game Scripts -->
   <script type="module">
