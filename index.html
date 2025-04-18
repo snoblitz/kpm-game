@@ -74,16 +74,16 @@
   <!-- Game Scripts -->
   <script type="module">
     // Import all modules
-    import { ROOM, WALL_H, ENEMIES_PER_LEVEL, measureDistance, updateBestStats } from '/js/utils.js';
-    import { makeBrickTexture, spawnTracer, spawnSpark } from '/js/textures.js';
-    import { playSound, playComboSound } from '/js/audio.js';
-    import { blocked, checkEnemyCollision, checkBossCollision, checkRayIntersection } from '/js/collision.js';
-    import { showLogo, createBossHealthBar, updateBossHealthBar, showVictoryScreen } from '/js/ui.js';
-    import { Enemy, EnemyManager } from '/js/enemy.js';
-    import { Boss, BossManager } from '/js/boss.js';
-    import { LevelManager } from '/js/level.js';
-    import { Player } from '/js/player.js';
-    import { Game } from '/js/game.js';
+    import { ROOM, WALL_H, ENEMIES_PER_LEVEL, measureDistance, updateBestStats } from './js/utils.js';
+    import { makeBrickTexture, spawnTracer, spawnSpark } from './js/textures.js';
+    import { playSound, playComboSound } from './js/audio.js';
+    import { blocked, checkEnemyCollision, checkBossCollision, checkRayIntersection } from './js/collision.js';
+    import { showLogo, createBossHealthBar, updateBossHealthBar, showVictoryScreen } from './js/ui.js';
+    import { Enemy, EnemyManager } from './js/enemy.js';
+    import { Boss, BossManager } from './js/boss.js';
+    import { LevelManager } from './js/level.js';
+    import { Player } from './js/player.js';
+    import { Game } from './js/game.js';
 
     // Initialize game when DOM is loaded
     window.addEventListener('DOMContentLoaded', () => {
