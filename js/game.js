@@ -65,10 +65,12 @@ export class Game {
         this.renderer = new THREE.WebGLRenderer({ antialias: true });
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         this.renderer.shadowMap.enabled = true;
+        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Better shadow quality
+        this.renderer.outputEncoding = THREE.sRGBEncoding; // Better color accuracy
         document.body.appendChild(this.renderer.domElement);
         
         // Add lights
-        const ambientLight = new THREE.AmbientLight(0x404040);
+        const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
         this.scene.add(ambientLight);
         
         const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
@@ -135,6 +137,7 @@ export class Game {
         if (this.player) this.player.update(delta, this.keys, this.colliders);
         if (this.enemyManager) this.enemyManager.update(delta, this.colliders);
         if (this.bossManager && this.bossManager.isBossFight) this.bossManager.update(delta, this.colliders);
+        if (this.levelManager) this.levelManager.updateSun(delta);
         
         // Update enemy positions and check collisions
         this.enemyManager.getEnemies().forEach(enemy => {
@@ -143,7 +146,9 @@ export class Game {
     }
 
     render() {
-        this.renderer.render(this.scene, this.camera);
+        if (this.renderer) {
+            this.renderer.render(this.scene, this.camera);
+        }
     }
 
     updateTimer() {

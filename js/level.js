@@ -12,6 +12,9 @@ export class LevelManager {
     this.currentLevel = 1;
     this.walls = [];
     this.door = null;
+    this.sunLight = null;
+    this.sun = null;
+    this.time = 0;
     this.generateLevel();
   }
 
@@ -20,6 +23,32 @@ export class LevelManager {
     this.walls.forEach(wall => this.scene.remove(wall));
     this.walls = [];
     if (this.door) this.scene.remove(this.door);
+
+    // Create sun and main light
+    if (!this.sunLight) {
+      this.sunLight = new THREE.DirectionalLight(0xffffaa, 1.5);
+      this.sunLight.position.set(20, 20, 20);
+      this.sunLight.castShadow = true;
+      
+      // Improve shadow quality
+      this.sunLight.shadow.mapSize.width = 2048;
+      this.sunLight.shadow.mapSize.height = 2048;
+      this.sunLight.shadow.camera.near = 0.5;
+      this.sunLight.shadow.camera.far = 100;
+      this.sunLight.shadow.camera.left = -30;
+      this.sunLight.shadow.camera.right = 30;
+      this.sunLight.shadow.camera.top = 30;
+      this.sunLight.shadow.camera.bottom = -30;
+      this.sunLight.shadow.bias = -0.0001;
+      
+      this.scene.add(this.sunLight);
+
+      // Create sun sphere
+      const sunGeometry = new THREE.SphereGeometry(2, 32, 32);
+      const sunMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00, transparent: true, opacity: 0.8 });
+      this.sun = new THREE.Mesh(sunGeometry, sunMaterial);
+      this.scene.add(this.sun);
+    }
 
     // Create floor
     const floor = new THREE.Mesh(
@@ -30,6 +59,10 @@ export class LevelManager {
     floor.receiveShadow = true;
     this.scene.add(floor);
     this.walls.push(floor);
+
+    // Create sky hemisphere light
+    const skyLight = new THREE.HemisphereLight(0x87ceeb, 0x404040, 0.5);
+    this.scene.add(skyLight);
 
     // Create walls
     const wallGeometry = new THREE.BoxGeometry(ROOM * 2, WALL_H, 1);
@@ -299,5 +332,28 @@ export class LevelManager {
    */
   getCurrentLevel() {
     return this.currentLevel;
+  }
+
+  // Add this new method to update sun position
+  updateSun(deltaTime) {
+    if (!this.sun || !this.sunLight) return;
+    
+    this.time += deltaTime * 0.1; // Control sun movement speed
+    
+    // Calculate sun position in a circular path
+    const radius = 40;
+    const height = 20;
+    const x = Math.cos(this.time) * radius;
+    const z = Math.sin(this.time) * radius;
+    const y = Math.abs(Math.sin(this.time)) * height + 10; // Keep sun above horizon
+    
+    this.sun.position.set(x, y, z);
+    this.sunLight.position.copy(this.sun.position);
+    
+    // Update light color based on height
+    const intensity = Math.abs(Math.sin(this.time));
+    const sunColor = new THREE.Color(1, 1, 0.8 + 0.2 * intensity);
+    this.sunLight.color.copy(sunColor);
+    this.sunLight.intensity = 1 + intensity * 0.5;
   }
 } 
