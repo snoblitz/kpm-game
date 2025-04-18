@@ -1,32 +1,4 @@
 import { ROOM } from './constants.js';
-import {
-  WALL_H,
-  RADIUS,
-  WALK,
-  RUN,
-  GRAV,
-  JUMP,
-  BASE_BOSS_HEALTH,
-  MIN_BOSS_HEALTH,
-  BOSS_SPEED,
-  MAX_LEVELS,
-  ENEMIES_PER_LEVEL
-} from './constants.js';
-
-export {
-  ROOM,
-  WALL_H,
-  RADIUS,
-  WALK,
-  RUN,
-  GRAV,
-  JUMP,
-  BASE_BOSS_HEALTH,
-  MIN_BOSS_HEALTH,
-  BOSS_SPEED,
-  MAX_LEVELS,
-  ENEMIES_PER_LEVEL
-};
 
 /**
  * Distance Measurement
