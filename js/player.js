@@ -17,15 +17,15 @@ export class Player {
         this.position.set(0, this.height, 0);
     }
 
-    update(dt, keys, colliders) {
+    update(deltaTime, colliders) {
         // Handle jumping
-        if (keys[' '] && this.onGround) {
+        if (this.keys[' '] && this.onGround) {
             this.velocity.y = JUMP;
             this.onGround = false;
         }
 
         // Apply gravity
-        this.velocity.y += GRAV * dt;
+        this.velocity.y += GRAV * deltaTime;
 
         // Check ground collision
         if (this.position.y <= this.height) {
@@ -36,10 +36,10 @@ export class Player {
 
         // Calculate movement direction based on key inputs
         const moveDirection = new THREE.Vector3();
-        if (keys.w) moveDirection.z -= 1;
-        if (keys.s) moveDirection.z += 1;
-        if (keys.a) moveDirection.x -= 1;
-        if (keys.d) moveDirection.x += 1;
+        if (this.keys.w) moveDirection.z += 1;  // Forward
+        if (this.keys.s) moveDirection.z -= 1;  // Backward
+        if (this.keys.a) moveDirection.x -= 1;  // Left
+        if (this.keys.d) moveDirection.x += 1;  // Right
         
         // Normalize movement vector
         if (moveDirection.length() > 0) {
@@ -47,7 +47,7 @@ export class Player {
         }
 
         // Get movement direction from keys
-        const speed = keys.shift ? RUN : WALK;
+        const speed = this.keys.shift ? RUN : WALK;
 
         // Calculate movement vector based on camera direction
         if (moveDirection.length() > 0) {
@@ -55,8 +55,8 @@ export class Player {
             const sin = Math.sin(angle);
             const cos = Math.cos(angle);
             
-            const moveX = (moveDirection.x * sin - moveDirection.z * cos) * speed * dt;
-            const moveZ = (moveDirection.x * cos + moveDirection.z * sin) * speed * dt;
+            const moveX = (moveDirection.x * cos + moveDirection.z * sin) * speed * deltaTime;
+            const moveZ = (-moveDirection.x * sin + moveDirection.z * cos) * speed * deltaTime;
 
             // Check collisions before moving
             const newX = this.position.x + moveX;
@@ -72,7 +72,7 @@ export class Player {
         }
 
         // Apply vertical movement
-        this.position.y += this.velocity.y * dt;
+        this.position.y += this.velocity.y * deltaTime;
     }
 
     /**
