@@ -12,6 +12,11 @@ export class Player {
         this.onGround = false;
         this.height = 2;
         this.radius = RADIUS;
+        this.keys = {};
+
+        // Set up keyboard event listeners
+        window.addEventListener('keydown', (e) => this.keys[e.key.toLowerCase()] = true);
+        window.addEventListener('keyup', (e) => this.keys[e.key.toLowerCase()] = false);
 
         // Set initial position
         this.position.set(0, this.height, 0);
