@@ -62,8 +62,27 @@ export class Game {
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(this.renderer.domElement);
         
+        // Add lights
+        const ambientLight = new THREE.AmbientLight(0x404040);
+        this.scene.add(ambientLight);
+        
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+        directionalLight.position.set(1, 1, 1).normalize();
+        this.scene.add(directionalLight);
+        
         // Initialize controls
         this.controls = new PointerLockControls(this.camera, document.body);
+        
+        // Set up keyboard event listeners
+        document.addEventListener('keydown', (e) => this.keys[e.key.toLowerCase()] = true);
+        document.addEventListener('keyup', (e) => this.keys[e.key.toLowerCase()] = false);
+        
+        // Set up pointer lock controls
+        document.addEventListener('click', () => {
+            if (!this.controls.isLocked) {
+                this.controls.lock();
+            }
+        });
         
         // Initialize managers
         this.levelManager = new LevelManager(this.scene);
