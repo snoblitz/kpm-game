@@ -2,7 +2,7 @@
 
 A fast-paced 3D browser game where you fight through increasingly difficult levels of enemies. Built with Three.js.
 
-## Features
+## Features (More Soon!)
 
 - First-person shooter gameplay
 - Multiple levels with increasing difficulty
