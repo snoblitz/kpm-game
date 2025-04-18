@@ -60,8 +60,6 @@
       transition: opacity 0.15s;
     }
   </style>
-  <!-- Three.js library for 3D graphics -->
-  <script src="https://unpkg.com/three@0.152.2/build/three.min.js"></script>
 </head>
 <body>
   <!-- HUD Elements -->
@@ -72,6 +70,14 @@
   <div id="fxHit"></div>
 
   <!-- Game Scripts -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.skypack.dev/three@0.152.2",
+        "three/examples/": "https://cdn.skypack.dev/three@0.152.2/examples/"
+      }
+    }
+  </script>
   <script type="module">
     // Import all modules
     import { ROOM, WALL_H, ENEMIES_PER_LEVEL } from './js/game.js';
