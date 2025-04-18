@@ -1,4 +1,4 @@
-import { RADIUS } from './game.js';
+import { RADIUS } from './constants.js';
 
 /**
  * Collision Detection

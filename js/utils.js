@@ -1,5 +1,5 @@
+import { ROOM } from './constants.js';
 import {
-  ROOM,
   WALL_H,
   RADIUS,
   WALK,

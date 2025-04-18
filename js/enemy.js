@@ -1,4 +1,4 @@
-import { ROOM } from './game.js';
+import { ROOM } from './constants.js';
 import { checkEnemyCollision } from './collision.js';
 import { spawnSpark } from './textures.js';
 import { playSound, playComboSound } from './audio.js';

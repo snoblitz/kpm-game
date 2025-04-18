@@ -1,4 +1,4 @@
-import { ROOM, BASE_BOSS_HEALTH, MIN_BOSS_HEALTH, BOSS_SPEED } from './game.js';
+import { ROOM, BASE_BOSS_HEALTH, MIN_BOSS_HEALTH, BOSS_SPEED } from './constants.js';
 import { checkBossCollision } from './collision.js';
 import { spawnSpark } from './textures.js';
 import { playSound } from './audio.js';
