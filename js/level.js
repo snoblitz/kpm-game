@@ -1,0 +1,215 @@
+import { ROOM, WALL_H, ENEMIES_PER_LEVEL } from './utils.js';
+import { makeBrickTexture } from './textures.js';
+import { playSound } from './audio.js';
+
+/**
+ * Level Manager
+ * Manages level generation and state
+ */
+export class LevelManager {
+  constructor(scene) {
+    this.scene = scene;
+    this.currentLevel = 1;
+    this.colliders = [];
+    this.brickTexture = makeBrickTexture();
+    this.materials = {
+      wall: new THREE.MeshLambertMaterial({ map: this.brickTexture, color: 0x888888 }),
+      floor: new THREE.MeshLambertMaterial({ color: 0x404040 })
+    };
+  }
+
+  /**
+   * Create a wall segment
+   * @param {number} x - X position
+   * @param {number} z - Z position
+   * @param {number} w - Width
+   * @param {number} h - Height
+   * @param {number} d - Depth
+   * @param {number} rot - Rotation in radians
+   * @returns {THREE.Mesh} The created wall mesh
+   */
+  createWall(x, z, w, h, d, rot = 0) {
+    const wall = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), this.materials.wall);
+    wall.position.set(x, h / 2, z);
+    wall.rotation.y = rot;
+    wall.castShadow = wall.receiveShadow = true;
+    wall.geometry.computeBoundingBox();
+    this.colliders.push(wall);
+    this.scene.add(wall);
+    return wall;
+  }
+
+  /**
+   * Create the floor
+   */
+  createFloor() {
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(60, 60), this.materials.floor);
+    floor.rotation.x = -Math.PI / 2;
+    floor.receiveShadow = true;
+    floor.userData.isFloor = true;
+    this.scene.add(floor);
+    this.colliders.push(floor);
+  }
+
+  /**
+   * Create level door
+   * @returns {THREE.Mesh} The created door mesh
+   */
+  createLevelDoor() {
+    const doorGeometry = new THREE.BoxGeometry(2, 4, 0.2);
+    const doorMaterial = new THREE.MeshLambertMaterial({ 
+      color: 0x4CAF50,
+      transparent: true,
+      opacity: 0.9
+    });
+    const door = new THREE.Mesh(doorGeometry, doorMaterial);
+    
+    // Position door on a random wall, but slightly in front of it
+    const walls = [
+      { pos: new THREE.Vector3(0, 2, -ROOM + 0.5), rot: 0, gap: true, dir: 'north' },
+      { pos: new THREE.Vector3(0, 2, ROOM - 0.5), rot: Math.PI, gap: true, dir: 'south' },
+      { pos: new THREE.Vector3(-ROOM + 0.5, 2, 0), rot: Math.PI/2, gap: true, dir: 'west' },
+      { pos: new THREE.Vector3(ROOM - 0.5, 2, 0), rot: -Math.PI/2, gap: true, dir: 'east' }
+    ];
+    const wall = walls[Math.floor(Math.random() * walls.length)];
+    door.position.copy(wall.pos);
+    door.rotation.y = wall.rot;
+    
+    // Create gap in the wall
+    const gapSize = 3;
+    const wallPositions = [
+      { x: 0, z: -ROOM, w: ROOM * 2, h: WALL_H, d: 1, rot: 0, dir: 'north' },
+      { x: 0, z: ROOM, w: ROOM * 2, h: WALL_H, d: 1, rot: 0, dir: 'south' },
+      { x: -ROOM, z: 0, w: 1, h: WALL_H, d: ROOM * 2, rot: Math.PI/2, dir: 'west' },
+      { x: ROOM, z: 0, w: 1, h: WALL_H, d: ROOM * 2, rot: -Math.PI/2, dir: 'east' }
+    ];
+    
+    const doorWall = wallPositions.find(w => w.dir === wall.dir);
+    if (doorWall) {
+      const halfWidth = (doorWall.w - gapSize) / 2;
+      const halfDepth = (doorWall.d - gapSize) / 2;
+      
+      if (wall.dir === 'north' || wall.dir === 'south') {
+        this.createWall(-(halfWidth + gapSize/2), doorWall.z, halfWidth, WALL_H, 1, doorWall.rot);
+        this.createWall(halfWidth + gapSize/2, doorWall.z, halfWidth, WALL_H, 1, doorWall.rot);
+      } else {
+        this.createWall(doorWall.x, -(halfDepth + gapSize/2), 1, WALL_H, halfDepth, doorWall.rot);
+        this.createWall(doorWall.x, halfDepth + gapSize/2, 1, WALL_H, halfDepth, doorWall.rot);
+      }
+    }
+    
+    // Add glow effect
+    const glowGeometry = new THREE.BoxGeometry(3, 5, 0.1);
+    const glowMaterial = new THREE.MeshBasicMaterial({
+      color: 0x4CAF50,
+      transparent: true,
+      opacity: 0.3
+    });
+    const glow = new THREE.Mesh(glowGeometry, glowMaterial);
+    glow.position.copy(wall.pos);
+    glow.rotation.y = wall.rot;
+    this.scene.add(glow);
+    
+    // Add level text
+    const canvas = document.createElement('canvas');
+    canvas.width = 256;
+    canvas.height = 64;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.font = 'bold 24px monospace';
+    ctx.fillStyle = '#4CAF50';
+    ctx.textAlign = 'center';
+    ctx.fillText(`LEVEL ${this.currentLevel + 1}`, canvas.width / 2, 40);
+
+    const textTexture = new THREE.CanvasTexture(canvas);
+    const textMaterial = new THREE.SpriteMaterial({ 
+      map: textTexture, 
+      transparent: true,
+      opacity: 0.9
+    });
+    const textSprite = new THREE.Sprite(textMaterial);
+    textSprite.scale.set(3, 0.75, 1);
+    
+    const textPos = wall.pos.clone();
+    textPos.y += 3;
+    textSprite.position.copy(textPos);
+    textSprite.onBeforeRender = (r, s, c) => textSprite.quaternion.copy(c.quaternion);
+    this.scene.add(textSprite);
+    
+    door.userData.isLevelDoor = true;
+    door.userData.wallPos = wall.pos;
+    this.scene.add(door);
+    return door;
+  }
+
+  /**
+   * Generate a new level
+   */
+  generateNewLevel() {
+    this.currentLevel++;
+    
+    // Remove all colliders except the floor
+    this.colliders.forEach(collider => {
+      if (!collider.userData.isFloor) {
+        this.scene.remove(collider);
+      }
+    });
+    this.colliders = this.colliders.filter(c => c.userData.isFloor);
+    
+    // Create new outer boundary walls
+    const wallPositions = [
+      { x: 0, z: -ROOM, w: ROOM * 2, h: WALL_H, d: 1, rot: 0 },
+      { x: 0, z: ROOM, w: ROOM * 2, h: WALL_H, d: 1, rot: 0 },
+      { x: -ROOM, z: 0, w: 1, h: WALL_H, d: ROOM * 2, rot: Math.PI/2 },
+      { x: ROOM, z: 0, w: 1, h: WALL_H, d: ROOM * 2, rot: -Math.PI/2 }
+    ];
+    
+    wallPositions.forEach(pos => {
+      this.createWall(pos.x, pos.z, pos.w, pos.h, pos.d, pos.rot);
+    });
+    
+    // Generate random maze walls
+    const numWalls = 6 + Math.floor(this.currentLevel / 2);
+    for (let i = 0; i < numWalls; i++) {
+      const x = (Math.random() - 0.5) * ROOM * 1.5;
+      const z = (Math.random() - 0.5) * ROOM * 1.5;
+      if (Math.abs(x) > 2 || Math.abs(z) > 2) {
+        this.createWall(x, z, 4, WALL_H, 1, Math.random() * Math.PI);
+      }
+    }
+    
+    playSound('start');
+  }
+
+  /**
+   * Get number of enemies for current level
+   * @returns {number} Number of enemies
+   */
+  getEnemyCount() {
+    return 13 + (this.currentLevel - 1) * ENEMIES_PER_LEVEL;
+  }
+
+  /**
+   * Get enemy speed for current level
+   * @returns {number} Enemy speed
+   */
+  getEnemySpeed() {
+    return 4 + (this.currentLevel - 1) * 0.5;
+  }
+
+  /**
+   * Get current level number
+   * @returns {number} Current level
+   */
+  getCurrentLevel() {
+    return this.currentLevel;
+  }
+
+  /**
+   * Get all colliders
+   * @returns {Array} Array of colliders
+   */
+  getColliders() {
+    return this.colliders;
+  }
+} 
