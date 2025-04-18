@@ -1,5 +1,3 @@
-import * as THREE from 'three';
-
 class PointerLockControls {
     constructor(camera, domElement) {
         this.camera = camera;

@@ -182,4 +182,4 @@ export class Game {
             document.getElementById('remaining').textContent = `Enemies: ${this.enemyManager.getEnemyCount()}`;
         }
     }
-} 
+}
