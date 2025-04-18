@@ -1,3 +1,5 @@
+import * as THREE from 'three';
+
 class PointerLockControls {
     constructor(camera, domElement) {
         this.camera = camera;
@@ -71,6 +73,10 @@ class PointerLockControls {
     getDirection() {
         const direction = new THREE.Vector3(0, 0, -1);
         return direction.applyQuaternion(this.camera.quaternion);
+    }
+
+    getObject() {
+        return this.camera;
     }
 }
 
