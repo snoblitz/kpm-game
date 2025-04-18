@@ -27,14 +27,29 @@ export class Enemy {
    */
   update(dt, colliders) {
     const step = 4 * dt; // Base enemy speed
+    
+    // Calculate new position
     const nx = this.mesh.position.x + Math.cos(this.mesh.userData.dir) * step;
     const nz = this.mesh.position.z + Math.sin(this.mesh.userData.dir) * step;
     
-    const newPos = new THREE.Vector3(nx, 0.25, nz);
+    // Check for collisions
+    const newPos = new THREE.Vector3(nx, this.mesh.position.y, nz);
     if (checkEnemyCollision(newPos, colliders)) {
-      this.mesh.userData.dir += Math.PI / 2;  // Turn 90 degrees on collision
+      // If collision, change direction
+      this.mesh.userData.dir += Math.PI / 2 + (Math.random() - 0.5) * Math.PI / 2;
     } else {
+      // If no collision, move to new position
       this.mesh.position.copy(newPos);
+    }
+    
+    // Keep enemy within bounds
+    if (Math.abs(this.mesh.position.x) > ROOM - 1) {
+      this.mesh.position.x = Math.sign(this.mesh.position.x) * (ROOM - 1);
+      this.mesh.userData.dir = Math.PI - this.mesh.userData.dir;
+    }
+    if (Math.abs(this.mesh.position.z) > ROOM - 1) {
+      this.mesh.position.z = Math.sign(this.mesh.position.z) * (ROOM - 1);
+      this.mesh.userData.dir = -this.mesh.userData.dir;
     }
   }
 

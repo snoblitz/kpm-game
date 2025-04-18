@@ -91,12 +91,22 @@ export class Game {
             }
         });
         
+        // Set up mouse click for shooting
+        document.addEventListener('mousedown', (e) => {
+            if (e.button === 0 && this.controls.isLocked) { // Left click
+                this.shoot();
+            }
+        });
+        
         // Initialize managers
         this.levelManager = new LevelManager(this.scene);
         this.colliders = this.levelManager.getColliders();
         this.enemyManager = new EnemyManager(this.scene);
         this.bossManager = new BossManager(this.scene, this);
         this.player = new Player(this.camera, this.controls);
+        
+        // Initialize raycaster for shooting
+        this.raycaster = new THREE.Raycaster();
         
         // Start timer
         this.startTime = performance.now();
@@ -122,6 +132,11 @@ export class Game {
         if (this.player) this.player.update(delta, this.keys, this.colliders);
         if (this.enemyManager) this.enemyManager.update(delta, this.colliders);
         if (this.bossManager && this.bossManager.isBossFight) this.bossManager.update(delta, this.colliders);
+        
+        // Update enemy positions and check collisions
+        this.enemyManager.getEnemies().forEach(enemy => {
+            enemy.update(delta, this.colliders);
+        });
     }
 
     render() {
@@ -137,5 +152,31 @@ export class Game {
         document.getElementById('timer').textContent = 
             `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${milliseconds.toString().padStart(2, '0')}`;
         requestAnimationFrame(() => this.updateTimer());
+    }
+
+    shoot() {
+        this.shotsFired++;
+        
+        // Update raycaster with current camera position and direction
+        this.raycaster.setFromCamera(new THREE.Vector2(), this.camera);
+        
+        // Check for hits with enemies
+        const enemyHits = this.raycaster.intersectObjects(this.enemyManager.getEnemies().map(e => e.mesh));
+        if (enemyHits.length > 0) {
+            const hitEnemy = enemyHits[0].object;
+            if (this.enemyManager.handleEnemyHit(hitEnemy, enemyHits[0].point)) {
+                this.shotsHit++;
+                this.enemiesKilled++;
+                document.getElementById('remaining').textContent = `Enemies: ${this.enemyManager.getEnemyCount()}`;
+            }
+        }
+        
+        // Check for hits with the door
+        const doorHits = this.raycaster.intersectObject(this.levelManager.door);
+        if (doorHits.length > 0) {
+            this.levelManager.nextLevel();
+            this.enemyManager.spawnEnemies(this.levelManager.getEnemyCount());
+            document.getElementById('remaining').textContent = `Enemies: ${this.enemyManager.getEnemyCount()}`;
+        }
     }
 } 
