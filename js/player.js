@@ -45,8 +45,8 @@ export class Player {
             const sin = Math.sin(angle);
             const cos = Math.cos(angle);
             
-            const moveX = (forward * sin + right * cos) * speed * dt;
-            const moveZ = (forward * cos - right * sin) * speed * dt;
+            const moveX = (forward * sin - right * cos) * speed * dt;
+            const moveZ = (forward * cos + right * sin) * speed * dt;
 
             // Check collisions before moving
             const newX = this.position.x + moveX;
