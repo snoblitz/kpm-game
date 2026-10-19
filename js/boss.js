@@ -7,15 +7,14 @@ export class Boss {
   constructor(scene, health) {
     this.scene = scene;
     this.mesh = new THREE.Mesh(
-      new THREE.BoxGeometry(2, 2, 2),
-      new THREE.MeshLambertMaterial({ color: 0x8B0000 })
+      new THREE.OctahedronGeometry(1.4, 0),
+      new THREE.MeshLambertMaterial({ color: 0xe875ba, emissive: 0x40102d })
     );
-    this.mesh.position.set(0, 1, 0);
+    this.mesh.position.set(0, 1.5, 0);
     this.mesh.userData.isBoss = true;
-    this.mesh.castShadow = this.mesh.receiveShadow = true;
     this.glow = new THREE.Mesh(
-      new THREE.BoxGeometry(2.2, 2.2, 2.2),
-      new THREE.MeshBasicMaterial({ color: 0xff0000, transparent: true, opacity: 0.3 })
+      new THREE.TorusGeometry(1.8, 0.055, 4, 24),
+      new THREE.MeshBasicMaterial({ color: 0x70e8ed })
     );
     this.mesh.add(this.glow);
     this.health = this.maxHealth = health;
@@ -29,7 +28,7 @@ export class Boss {
   update(delta, playerPosition, colliders) {
     this.time += delta;
     this.hitFlash = Math.max(0, this.hitFlash - delta);
-    this.mesh.material.emissive.setHex(this.hitFlash ? 0xff0000 : 0x000000);
+    this.mesh.material.emissive.setHex(this.hitFlash ? 0xffc275 : 0x40102d);
     if (!this.targetPosition || this.mesh.position.distanceTo(this.targetPosition) < 1) {
       this.targetPosition = this.getNewTargetPosition(playerPosition);
     }
@@ -38,12 +37,12 @@ export class Boss {
     this.nextPosition.copy(this.mesh.position).addScaledVector(this.direction.normalize(), Math.min(distance, BOSS_SPEED * delta));
     if (checkBossCollision(this.nextPosition, colliders)) this.targetPosition = null;
     else this.mesh.position.copy(this.nextPosition);
-    this.glow.material.opacity = 0.3 + 0.1 * Math.sin(this.time * 3);
+    this.glow.rotation.set(this.time * 0.7, this.time * 0.5, 0.2);
   }
   getNewTargetPosition(playerPosition) {
     const target = Math.random() < 0.7
-      ? new THREE.Vector3(playerPosition.x + (Math.random() - 0.5) * 5, 1, playerPosition.z + (Math.random() - 0.5) * 5)
-      : new THREE.Vector3((Math.random() - 0.5) * ROOM * 1.5, 1, (Math.random() - 0.5) * ROOM * 1.5);
+      ? new THREE.Vector3(playerPosition.x + (Math.random() - 0.5) * 5, 1.5, playerPosition.z + (Math.random() - 0.5) * 5)
+      : new THREE.Vector3((Math.random() - 0.5) * ROOM * 1.5, 1.5, (Math.random() - 0.5) * ROOM * 1.5);
     target.x = Math.max(-ROOM + 3, Math.min(ROOM - 3, target.x));
     target.z = Math.max(-ROOM + 3, Math.min(ROOM - 3, target.z));
     return target;
@@ -70,7 +69,7 @@ export class BossManager {
     this.clear();
     const timeBonus = Math.max(0, 30 - clearSeconds);
     this.boss = new Boss(this.scene, Math.max(MIN_BOSS_HEALTH, BASE_BOSS_HEALTH - timeBonus));
-    this.boss.mesh.position.set(playerPosition.x > 0 ? -8 : 8, 1, playerPosition.z > 0 ? -8 : 8);
+    this.boss.mesh.position.set(playerPosition.x > 0 ? -8 : 8, 1.5, playerPosition.z > 0 ? -8 : 8);
     playSound('boss-spawn');
   }
   update(delta, playerPosition, colliders) { this.boss?.update(delta, playerPosition, colliders); }

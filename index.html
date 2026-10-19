@@ -54,9 +54,11 @@
     }
     @media (max-height: 500px) { #panel { align-items: start; } }
   </style>
+  <link rel="stylesheet" href="./visual.css">
 </head>
 <body>
   <div id="hud">
+    <span id="hudBrand">KPM <small> // SIGNAL RANGE</small></span>
     <span id="remaining">Enemies: 13</span>
     <span id="timer">00:00.00</span>
     <span id="longestKill">Longest kill: 0.00m</span>
@@ -64,6 +66,9 @@
     <progress id="bossHealth" aria-label="Boss health" hidden></progress>
   </div>
   <div id="crosshair" hidden></div>
+  <div id="hitmarker" hidden></div>
+  <div id="feedback" hidden></div>
+  <output id="performance" aria-label="Rendering performance" hidden></output>
   <button id="pause" type="button" aria-label="Pause game" hidden>Pause</button>
   <div id="touchControls" hidden>
     <div id="lookPad" aria-label="Swipe to look"><span>SWIPE TO LOOK</span></div>
@@ -75,10 +80,13 @@
   </div>
   <section id="panel" aria-labelledby="panelTitle">
     <div class="card">
+      <div class="eyebrow">SIGNAL RANGE <span>TRIAL / 01</span></div>
       <h1 id="panelTitle">KPM — Kill Per Minute</h1>
       <p id="message">Loading the arena…</p>
       <label for="controlMode">Controls</label>
       <select id="controlMode"><option value="desktop">Mouse + keyboard</option><option value="touch">Phone / touch</option></select>
+      <label for="quality">Visual quality</label>
+      <select id="quality"><option value="auto">Auto · adaptive</option><option value="low">Low · battery saver</option><option value="high">High · sharper resolution</option></select>
       <p class="desktop-instructions">WASD or arrows: move · Mouse: look · Left click: shoot<br>Shift: run · Space: jump · Esc: pause</p>
       <p class="touch-instructions">Left stick: move; push to its edge to run. Swipe the right side to look. Tap FIRE for each shot; hold JUMP to jump. Use Pause to take a break. Landscape gives you more room.</p>
       <p>Enemies are moving targets; this is a speed and accuracy challenge.</p>
@@ -86,6 +94,7 @@
       <button id="start" type="button">Start</button>
       <button id="retry" type="button" hidden>Retry</button>
       <label><input id="mute" type="checkbox"> Mute sound</label>
+      <label><input id="showPerformance" type="checkbox"> Show performance stats</label>
     </div>
   </section>
   <noscript>This game requires JavaScript and WebGL.</noscript>

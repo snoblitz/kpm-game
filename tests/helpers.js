@@ -14,3 +14,18 @@ export function memoryStorage(initial = '{}') {
   let value = initial;
   return { getItem: () => value, setItem: (key, next) => { value = next; } };
 }
+
+// Inventory is a CPU-side upper bound, not renderer.info or a GPU benchmark.
+export function sceneInventory(scene) {
+  const geometries=new Set(),materials=new Set();
+  let renderObjects=0,triangles=0,lights=0,shadowLights=0;
+  scene.traverseVisible(object=>{
+    if(object.isLight){lights++;if(object.castShadow)shadowLights++;}
+    if(!object.geometry)return;
+    renderObjects++;
+    geometries.add(object.geometry);
+    (Array.isArray(object.material)?object.material:[object.material]).forEach(material=>materials.add(material));
+    if(object.isMesh)triangles+=(object.geometry.index?.count??object.geometry.attributes.position.count)/3*(object.isInstancedMesh?object.count:1);
+  });
+  return {renderObjects,triangles,lights,shadowLights,geometries:geometries.size,materials:materials.size};
+}

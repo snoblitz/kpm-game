@@ -22,7 +22,7 @@ export function blocked(x, z, colliders) {
   return intersects(playerPosition.set(x, 2, z), RADIUS, colliders);
 }
 export function checkEnemyCollision(position, colliders) {
-  return intersects(position, 0.25, colliders);
+  return intersects(position, 0.4, colliders);
 }
 export function checkBossCollision(position, colliders) {
   // A sphere enclosing the boss's square footprint avoids visible corner clipping.

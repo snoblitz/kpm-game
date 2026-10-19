@@ -1,0 +1,48 @@
+:root { color-scheme: dark; --ice: #a0f1ec; --amber: #ffcb89; --ink: #101e2d; }
+body { font-family: "Segoe UI", system-ui, sans-serif; background: #081321; }
+#hud { align-items: center; gap: 8px 18px; font-size: 15px; letter-spacing: .04em; text-shadow: 0 2px 4px #000; }
+#hudBrand { flex-basis: 100%; font-weight: 900; letter-spacing: .12em; color: var(--ice); }
+#hudBrand small { font-size: 10px; color: #8db1c3; font-weight: 600; }
+#timer { font-size: 22px; font-variant-numeric: tabular-nums; font-weight: 800; color: var(--amber); }
+#score { text-align: left; font-size: 12px; color: #d0e6ed; }
+#remaining { padding: 5px 9px; border-left: 3px solid var(--amber); background: #101e2dbb; }
+#longestKill { font-size: 12px; }
+#bossHealth { accent-color: #ed90c7; }
+#crosshair { width: 14px; height: 14px; border: 1px solid #d4ffffc9; border-radius: 2px; box-shadow: 0 0 0 1px #05131b; background: radial-gradient(circle, #e3ffff 1px, transparent 2px); }
+#hitmarker { position: fixed; z-index: 9; top: 50%; left: 50%; width: 24px; height: 24px; border: 2px solid var(--amber); transform: translate(-50%,-50%) rotate(45deg); pointer-events: none; }
+#feedback { position: fixed; z-index: 9; top: calc(50% + 38px); left: 50%; transform: translateX(-50%); color: var(--amber); font-size: 11px; font-weight: 800; letter-spacing: .16em; white-space: nowrap; pointer-events: none; text-shadow: 0 2px 3px #000; }
+#performance { position: fixed; z-index: 11; left: max(12px,env(safe-area-inset-left)); bottom: max(8px,env(safe-area-inset-bottom)); padding: 4px 7px; background: #081321dd; color: #b3e8e2; font: 10px monospace; pointer-events: none; }
+.touch-mode #performance { bottom: calc(174px + env(safe-area-inset-bottom)); max-width: 85vw; }
+#panel { background: #030b16c9; }
+.card { width: min(490px,calc(100vw - 40px)); box-sizing: border-box; padding: 28px; border: 1px solid #365a70; border-top: 3px solid var(--ice); border-radius: 4px; background: linear-gradient(135deg,#172b3e,#0c1825); box-shadow: 0 20px 70px #0008; }
+.eyebrow { display: flex; justify-content: space-between; gap: 12px; font-size: 10px; letter-spacing: .16em; font-weight: 800; color: var(--ice); }
+.eyebrow span { color: #799aad; }
+h1 { font-size: 52px; line-height: 1; font-weight: 900; letter-spacing: -.05em; color: #e9fbff; margin: 20px 0 14px; }
+#message { color: #ecf3f6; font-weight: 600; }
+p { color: #a5c0ce; font-size: 13px; line-height: 1.6; }
+label { margin-top: 13px; color: #b8ceda; font-size: 12px; }
+select { width: 100%; margin: 7px 0 0; background: #0a1622; border: 1px solid #416076; border-radius: 3px; font: 14px "Segoe UI",system-ui,sans-serif; color: #e8f5fb; }
+button { font: 800 15px "Segoe UI",system-ui,sans-serif; letter-spacing: .04em; border: 1px solid #7ab9bc; border-radius: 3px; background: #173948; color: #d9fffb; }
+#start,#retry { min-width: 148px; background: var(--ice); color: #0c2933; border-color: var(--ice); }
+#pause { color: var(--ice); background: #102638dd; border-color: #4c7587; }
+button:focus-visible,select:focus-visible { outline: 2px solid var(--amber); outline-offset: 3px; }
+input { accent-color: var(--ice); }
+dl { padding: 14px 0; border-top: 1px solid #315267; border-bottom: 1px solid #315267; font-size: 13px; color: #b6d1dd; }
+dd { color: var(--ice); font-variant-numeric: tabular-nums; }
+#movePad { border-color: #8ce6e9aa; background: #122a3d99; }
+#moveStick { background: #98ebe65c; border-color: #b6fffa; }
+#touchActions button { font-family: "Segoe UI",system-ui,sans-serif; letter-spacing: .04em; }
+#touchActions #fireButton { color: #fff0db; border-color: var(--amber); background: #6c4529d9; }
+#lookPad span { color: #a2cbd180; letter-spacing: .1em; }
+@media(max-width:600px),(max-height:500px) {
+  #hud { gap: 4px 12px; font-size: 12px; }
+  #timer { font-size: 19px; }
+  #score { font-size: 10px; }
+  #hudBrand { font-size: 11px; }
+  #hudBrand small { font-size: 8px; }
+  .card { padding: 18px; }
+  h1 { font-size: 36px; }
+  select { font-size: 16px; }
+}
+@media(max-height:420px) { #hudBrand { display:none; } }
+@media(prefers-reduced-motion:reduce) { .card { box-shadow:none; } }

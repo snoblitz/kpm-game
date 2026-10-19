@@ -174,7 +174,7 @@ test('pause clears held keys and preserves boss phase; resume excludes idle time
   assert.ok(position.distanceTo(game.camera.position) <= 0.501);
 });
 
-test('effects dispose geometry/materials and rebuilding never accumulates lights', () => {
+test('effects return to their pool, dispose once at teardown, and rebuilding never accumulates lights', () => {
   const { game } = fixture();
   game.effects.spark(new THREE.Vector3());
   const mesh = game.effects.items[0].mesh;
@@ -184,12 +184,19 @@ test('effects dispose geometry/materials and rebuilding never accumulates lights
   game.effects.update(0.3);
   assert.equal(game.effects.items.length, 0);
   assert.equal(mesh.parent, null);
-  assert.equal(geometries, 1);
-  assert.equal(materials, 1);
+  assert.equal(geometries, 0);
+  assert.equal(materials, 0);
+  game.effects.spark(new THREE.Vector3());
+  assert.equal(game.effects.items[0].mesh, mesh);
+  game.effects.clear();
   const children = game.scene.children.length;
   for (let i = 0; i < 10; i++) game.resetRun();
   assert.equal(game.scene.children.length, children);
   assert.equal(game.scene.children.filter(child => child.isLight).length, 2);
+  game.effects.dispose();
+  game.effects.dispose();
+  assert.equal(geometries, 1);
+  assert.equal(materials, 1);
 });
 
 test('touch starts, moves, shoots, pauses, resumes and retries without requesting pointer lock', () => {

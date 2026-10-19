@@ -7,11 +7,12 @@ export class Enemy {
     this.mesh.position.copy(position);
     this.mesh.userData.dir = Math.random() * Math.PI * 2;
     this.mesh.userData.isEnemy = true;
-    this.mesh.castShadow = this.mesh.receiveShadow = true;
+    this.mesh.scale.y = 1.5;
     this.nextPosition = new THREE.Vector3();
     scene.add(this.mesh);
   }
   update(delta, colliders) {
+    this.mesh.rotation.y += delta * 1.6;
     const direction = this.mesh.userData.dir;
     this.nextPosition.set(
       this.mesh.position.x + Math.cos(direction) * ENEMY_SPEED * delta,
@@ -30,15 +31,15 @@ export class EnemyManager {
   constructor(scene) {
     this.scene = scene;
     this.enemies = [];
-    this.geometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
-    this.material = new THREE.MeshLambertMaterial({ color: 0xff0000 });
+    this.geometry = new THREE.OctahedronGeometry(0.38, 0);
+    this.material = new THREE.MeshLambertMaterial({ color: 0xffc66d, emissive: 0x683000 });
   }
   spawnEnemies(count, colliders) {
     this.clear();
     for (let i = 0; i < count; i++) {
       let position;
       for (let attempt = 0; attempt < 1000; attempt++) {
-        position = new THREE.Vector3((Math.random() - 0.5) * ROOM * 1.5, 0.25, (Math.random() - 0.5) * ROOM * 1.5);
+        position = new THREE.Vector3((Math.random() - 0.5) * ROOM * 1.5, 0.7, (Math.random() - 0.5) * ROOM * 1.5);
         if (Math.hypot(position.x, position.z) > 3 &&
             !checkEnemyCollision(position, colliders) &&
             !this.enemies.some(enemy => enemy.mesh.position.distanceTo(position) < 1)) break;

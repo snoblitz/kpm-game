@@ -34,6 +34,26 @@ Combos grow when successive target kills are less than two active seconds apart.
 Accuracy counts arena and boss shots; boss accuracy is also shown separately.
 Personal bests are stored locally when browser storage is available.
 
+## Visuals and quality
+
+The Signal Range arena uses dark blue structural panels, cyan floor/wall guides,
+bright amber faceted targets, and a magenta boss core with an orbiting ring.
+The weapon has lightweight recoil and a muzzle flash; successful hits show a
+brief marker and confirmation. Targets are taller and easier to distinguish.
+
+**Visual quality** is available in the start/pause panel:
+
+- **Auto** caps render pixel ratio at 1.25 on touch devices and 1.5 on desktop.
+  Sustained frame intervals above 22 ms lower the ratio in steps, down to 0.75.
+- **Low** caps pixel ratio at 1.0; **High** caps it at 2.0. Manual modes do not adapt.
+- **Show performance stats** displays frame intervals/FPS, actual renderer draw
+  calls and triangles, geometry/texture counts, and current pixel ratio.
+
+There are no dynamic shadows, postprocessing passes, downloaded textures, or
+added lights. Wall details use instancing; effects reuse a fixed pool. These
+reduce specific costs, but device FPS has not been measured. See
+[PERFORMANCE.md](PERFORMANCE.md) for inventory comparisons and a phone benchmark checklist.
+
 ## Run locally
 
 Serve the repository over HTTP, for example with Python 3:
@@ -62,6 +82,8 @@ movement, collision, raycasting, scoring, boss/results/retry transitions, pause
 timing and resource disposal. Touch tests cover concurrent pointer ownership,
 look/fire separation, dead zones, cancellation, pause cleanup and touch play
 without pointer lock. They do not create a WebGL renderer or emulate a real phone.
+Graphics tests bound scene geometry and active effects, check pooled resource
+disposal across retries, and exercise adaptive resolution with simulated frame intervals.
 
 Before releasing, also check in a browser:
 
@@ -74,6 +96,8 @@ Before releasing, also check in a browser:
 7. On a phone, move, look, fire and jump together; releasing one control must not stop the others.
 8. Hold the stick and switch apps, rotate the phone, or pause; no input should remain stuck.
 9. Check portrait/landscape safe areas, panel scrolling, mute, resume and retry.
+10. Toggle performance stats and each quality setting. Measure on actual phones;
+    scene inventory alone does not establish frame rate or thermal behavior.
 
 Pull requests run the regression checks. The current private preview is deployed
 to ChatGPT Sites. The existing main-branch Pages workflow is retained; updating

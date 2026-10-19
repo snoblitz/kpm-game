@@ -2,7 +2,7 @@ import { setMuted } from './audio.js';
 import { formatTime } from './utils.js';
 
 export class GameUI {
-  constructor({ onStart, onRetry, onPause, onModeChange }) {
+  constructor({ onStart, onRetry, onPause, onModeChange, onQualityChange }) {
     this.panel = document.getElementById('panel');
     this.title = document.getElementById('panelTitle');
     this.message = document.getElementById('message');
@@ -18,6 +18,14 @@ export class GameUI {
     this.crosshair = document.getElementById('crosshair');
     this.pause = document.getElementById('pause');
     this.mode = document.getElementById('controlMode');
+    this.quality = document.getElementById('quality');
+    this.showPerformance = document.getElementById('showPerformance');
+    this.performance = document.getElementById('performance');
+    this.feedback = document.getElementById('feedback');
+    this.hitmarker = document.getElementById('hitmarker');
+    this.feedbackTime = this.statsTime = 0;
+    this.onQualityChange = () => onQualityChange(this.quality.value);
+    this.onPerformance = () => { this.performance.hidden = !this.showPerformance.checked; };
     this.onPause = onPause;
     this.onModeChange = () => onModeChange(this.mode.value === 'touch');
     this.onStart = onStart;
@@ -28,6 +36,8 @@ export class GameUI {
     this.mute.addEventListener('change', this.onMute);
     this.pause.addEventListener('click', this.onPause);
     this.mode.addEventListener('change', this.onModeChange);
+    this.quality.addEventListener('change', this.onQualityChange);
+    this.showPerformance.addEventListener('change', this.onPerformance);
   }
   setTouchMode(enabled) {
     this.mode.value = enabled ? 'touch' : 'desktop';
@@ -38,10 +48,11 @@ export class GameUI {
     this.panel.hidden = !visible;
     this.crosshair.hidden = visible;
     this.pause.hidden = visible;
+    if (visible) { this.feedback.hidden = this.hitmarker.hidden = true; this.feedbackTime = 0; }
     this.start.hidden = phase === 'results';
     this.retry.hidden = phase !== 'results';
     this.stats.hidden = phase !== 'results';
-    this.title.textContent = phase === 'paused' ? 'Paused' : phase === 'results' ? 'Room cleared!' : 'KPM — Kill Per Minute';
+    this.title.textContent = phase === 'paused' ? 'Run paused' : phase === 'results' ? 'Range cleared' : 'KPM';
     this.start.textContent = phase === 'paused' ? 'Resume' : 'Start';
     this.message.textContent = phase === 'paused'
       ? 'Your run is paused. Resume when you are ready.'
@@ -61,6 +72,20 @@ export class GameUI {
     }
   }
   showMessage(text) { this.message.textContent = text; }
+  flashHit(text) {
+    this.feedbackTime = 0.6;
+    this.feedback.textContent = text;
+    this.feedback.hidden = this.hitmarker.hidden = false;
+  }
+  tick(seconds, quality, active) {
+    if (active) this.feedbackTime = Math.max(0, this.feedbackTime - seconds);
+    this.hitmarker.hidden = this.feedbackTime < 0.46;
+    this.feedback.hidden = this.feedbackTime === 0;
+    this.statsTime += seconds;
+    if (this.showPerformance.checked && this.statsTime > 0.5) {
+      this.performance.textContent = quality.readout(); this.statsTime = 0;
+    }
+  }
   showResults(stats, best) {
     this.setPhase('results');
     this.message.textContent = 'All targets and the boss defeated. Retry for a faster, more accurate run.';
@@ -88,5 +113,7 @@ export class GameUI {
     this.mute.removeEventListener('change', this.onMute);
     this.pause.removeEventListener('click', this.onPause);
     this.mode.removeEventListener('change', this.onModeChange);
+    this.quality.removeEventListener('change', this.onQualityChange);
+    this.showPerformance.removeEventListener('change', this.onPerformance);
   }
 }

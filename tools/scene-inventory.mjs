@@ -1,0 +1,12 @@
+import { THREE, sceneInventory } from '../tests/helpers.js';
+import { LevelManager } from '../js/level.js';
+import { EnemyManager } from '../js/enemy.js';
+import { BossManager } from '../js/boss.js';
+import { Weapon } from '../js/weapon.js';
+const scene=new THREE.Scene(), camera=new THREE.PerspectiveCamera();scene.add(camera);
+const level=new LevelManager(scene), enemies=new EnemyManager(scene), weapon=new Weapon(camera);
+enemies.spawnEnemies(13,level.getColliders());
+const arena=sceneInventory(scene);
+enemies.clear();const boss=new BossManager(scene);boss.startBossFight(10);
+console.log(JSON.stringify({arena,boss:sceneInventory(scene),note:'CPU scene inventory, including weapon and instances. Not measured renderer calls, GPU cost, or frame timing.'},null,2));
+boss.clear();weapon.dispose();enemies.dispose();level.dispose();

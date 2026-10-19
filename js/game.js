@@ -1,5 +1,7 @@
 import { PointerLockControls } from './PointerLockControls.js';
 import { TouchControls } from './touch-controls.js';
+import { Weapon } from './weapon.js';
+import { RenderQuality } from './render-quality.js';
 import { LevelManager } from './level.js';
 import { EnemyManager } from './enemy.js';
 import { BossManager } from './boss.js';
@@ -45,22 +47,23 @@ export class Game {
 
   init() {
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x87CEEB);
+    this.scene.background = new THREE.Color(0x081321);
+    this.scene.fog = new THREE.Fog(0x081321, 28, 85);
     this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
     this.scene.add(this.camera);
-    this.renderer = new THREE.WebGLRenderer({ antialias: true });
+    this.renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance' });
     this.renderer.setSize(window.innerWidth, window.innerHeight);
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-    this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.shadowMap.enabled = false;
     this.renderer.outputEncoding = THREE.sRGBEncoding;
+    this.quality = new RenderQuality(this.renderer);
     document.body.appendChild(this.renderer.domElement);
     this.controls = new PointerLockControls(this.camera, this.renderer.domElement, {
       onChange: locked => this.onLockChange(locked),
       onError: () => this.ui.showMessage('Mouse capture was not granted. Click Start or Resume to try again.')
     });
     this.ui = new GameUI({ onStart: () => this.requestPlay(), onRetry: () => this.retry(),
-      onPause: () => this.pause(), onModeChange: enabled => this.setTouchMode(enabled) });
+      onPause: () => this.pause(), onModeChange: enabled => this.setTouchMode(enabled),
+      onQualityChange: mode => this.quality.setMode(mode) });
     this.touch = new TouchControls({
       root: document.getElementById('touchControls'), move: document.getElementById('movePad'),
       stick: document.getElementById('moveStick'), look: document.getElementById('lookPad'),
@@ -74,6 +77,7 @@ export class Game {
     this.bossManager = new BossManager(this.scene);
     this.player = new Player(this.camera, this.controls);
     this.effects = new Effects(this.scene);
+    this.weapon = new Weapon(this.camera);
     this.raycaster = new THREE.Raycaster();
     this.center = new THREE.Vector2();
     this.resetRun(false);
@@ -97,6 +101,7 @@ export class Game {
   setTouchMode(enabled) {
     if (this.run.active) this.pause();
     this.touchMode = enabled;
+    this.quality?.setTouch(enabled);
     this.touch?.setActive(false);
     this.ui?.setTouchMode?.(enabled);
   }
@@ -122,6 +127,7 @@ export class Game {
   pause(unlock = true) {
     this.keys = {};
     this.touch?.setActive(false);
+    this.weapon?.reset();
     if (!this.run.active) return;
     // Account for the active fraction since the previous frame, then freeze.
     this.run.advance(Math.max(0, (this.now() - this.last) / 1000));
@@ -135,6 +141,7 @@ export class Game {
     this.keys = {};
     this.touch?.setActive(false);
     this.effects.clear();
+    this.weapon?.reset();
     this.enemyManager.clear();
     this.bossManager.clear();
     if (rebuild) this.levelManager.generateLevel();
@@ -156,11 +163,14 @@ export class Game {
     if (this.disposed) return;
     this.update();
     this.renderer.render(this.scene, this.camera);
+    this.quality.record(this.frameSeconds, this.run.active);
+    this.ui.tick(this.frameSeconds, this.quality, this.run.active);
     this.frame = requestAnimationFrame(() => this.animate());
   }
   update() {
     const now = this.now();
     const elapsed = Math.max(0, (now - this.last) / 1000);
+    this.frameSeconds = elapsed;
     this.last = now;
     if (!this.run.active) return;
     this.run.advance(elapsed);
@@ -170,12 +180,14 @@ export class Game {
     if (this.run.phase === 'boss') this.bossManager.update(delta, this.camera.position, this.colliders);
     this.levelManager.updateSun(delta);
     this.effects.update(delta);
+    this.weapon?.update(delta, this.player.movement.lengthSq() > 0);
     this.ui.update(this.run, this.enemyManager.getEnemyCount(), this.bossManager.boss);
   }
 
   shoot() {
     if ((!this.controls.isLocked && !this.touchMode) || !this.run.active) return;
     this.run.recordShot();
+    this.weapon?.shoot();
     this.scene.updateMatrixWorld(true);
     this.raycaster.setFromCamera(this.center, this.camera);
     const targets = [...this.colliders, ...this.enemyManager.getEnemies().map(enemy => enemy.mesh)];
@@ -183,11 +195,12 @@ export class Game {
     // One ordered hit query makes walls/doors block targets behind them.
     const hit = this.raycaster.intersectObjects(targets, false)[0];
     const end = hit ? hit.point : this.raycaster.ray.at(50, new THREE.Vector3());
-    this.effects.tracer(this.camera.position, end);
+    this.effects.tracer(this.weapon?.getMuzzle() || this.camera.position, end);
     playSound('shoot');
 
     if (hit?.object.userData.isEnemy && this.enemyManager.handleEnemyHit(hit.object)) {
       this.run.recordKill(hit.distance);
+      this.ui.flashHit?.('TARGET DOWN' + (this.run.combo > 1 ? ' · ×' + this.run.combo : ''));
       this.effects.spark(hit.point);
       playSound('hit');
       if (this.run.combo > 1) playComboSound(this.run.combo);
@@ -198,6 +211,7 @@ export class Game {
     } else if (hit?.object.userData.isBoss && this.run.phase === 'boss') {
       this.effects.spark(hit.point);
       const result = this.bossManager.handleHit();
+      this.ui.flashHit?.(result.defeated ? 'CORE CLEARED' : 'CORE HIT');
       this.run.recordBossHit(result.damage);
       if (result.defeated) this.finish();
     }
@@ -230,7 +244,8 @@ export class Game {
     this.touch?.dispose();
     this.controls?.dispose();
     this.ui?.dispose();
-    this.effects?.clear();
+    this.effects?.dispose();
+    this.weapon?.dispose();
     this.bossManager?.clear();
     this.enemyManager?.dispose();
     this.levelManager?.dispose();
