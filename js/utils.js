@@ -1,35 +1,25 @@
-import { ROOM } from './constants.js';
+export function measureDistance(point1, point2) { return point1.distanceTo(point2); }
 
-/**
- * Distance Measurement
- * Calculates the Euclidean distance between two points
- * @param {THREE.Vector3} point1 - First point
- * @param {THREE.Vector3} point2 - Second point
- * @returns {number} Distance between points
- */
-export function measureDistance(point1, point2) {
-  return Math.sqrt(
-    Math.pow(point1.x - point2.x, 2) +
-    Math.pow(point1.y - point2.y, 2) +
-    Math.pow(point1.z - point2.z, 2)
-  );
+export function formatTime(seconds) {
+  const ticks = Math.floor(Math.max(0, seconds) * 100);
+  const minutes = Math.floor(ticks / 6000).toString().padStart(2, '0');
+  const wholeSeconds = Math.floor(ticks % 6000 / 100).toString().padStart(2, '0');
+  const hundredths = (ticks % 100).toString().padStart(2, '0');
+  return minutes + ':' + wholeSeconds + '.' + hundredths;
 }
 
-/**
- * Statistics Management
- * Updates and saves best game statistics
- * @param {Object} stats - Current game statistics
- * @returns {Object} Updated best statistics
- */
-export function updateBestStats({ time, accuracy, kills, kpm, longestKill }) {
-  const best = JSON.parse(localStorage.getItem('bestStats') || '{}');
-  const newBest = {
-    time: best.time ? Math.min(best.time, time) : time,
-    accuracy: best.accuracy ? Math.max(best.accuracy, accuracy) : accuracy,
-    kills: best.kills ? Math.max(best.kills, kills) : kills,
-    kpm: best.kpm ? Math.max(best.kpm, kpm) : kpm,
-    longestKill: best.longestKill ? Math.max(best.longestKill, longestKill) : longestKill
-  };
-  localStorage.setItem('bestStats', JSON.stringify(newBest));
-  return newBest;
-} 
+export function updateBestStats(stats) {
+  const fields = ['time', 'accuracy', 'kills', 'kpm', 'longestKill'];
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem('bestStats') || '{}') || {}; } catch {}
+  const best = {};
+  for (const field of fields) {
+    const current = Number.isFinite(stats[field]) && stats[field] >= 0 ? stats[field] : 0;
+    const previous = saved[field];
+    best[field] = Number.isFinite(previous) && previous >= 0
+      ? (field === 'time' ? Math.min(previous, current) : Math.max(previous, current))
+      : current;
+  }
+  try { localStorage.setItem('bestStats', JSON.stringify(best)); } catch {}
+  return best;
+}

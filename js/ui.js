@@ -1,137 +1,122 @@
-import { updateBestStats } from './utils.js';
+import { setMuted } from './audio.js';
+import { formatTime } from './utils.js';
 
-/**
- * UI - Game Logo Display
- * Shows the KPM logo at game start
- * @param {THREE.Scene} scene - The game scene
- * @param {THREE.Camera} camera - The game camera
- */
-export function showLogo(scene, camera) {
-  const canvas = document.createElement('canvas');
-  canvas.width = 512;
-  canvas.height = 128;
-  const ctx = canvas.getContext('2d');
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.font = 'bold 64px monospace';
-  ctx.fillStyle = '#0f0';
-  ctx.textAlign = 'center';
-  ctx.fillText('KPM', canvas.width / 2, 80);
-
-  // Create floating logo sprite
-  const texture = new THREE.CanvasTexture(canvas);
-  const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
-  const sprite = new THREE.Sprite(material);
-  sprite.scale.set(8, 2, 1);
-  sprite.name = "KPM_LOGO";
-
-  // Position logo in front of player
-  const dir = new THREE.Vector3();
-  camera.getWorldDirection(dir);
-  const logoPos = camera.position.clone().add(dir.multiplyScalar(10));
-  logoPos.y += 2;
-  sprite.position.copy(logoPos);
-
-  // Make logo face camera
-  sprite.onBeforeRender = (r, s, c) => sprite.quaternion.copy(c.quaternion);
-  scene.add(sprite);
-
-  // Fade out effect
-  let opacity = 1;
-  function fade() {
-    opacity -= 0.02;
-    material.opacity = opacity;
-    if (opacity > 0) requestAnimationFrame(fade);
-    else scene.remove(sprite);
+export class GameUI {
+  constructor({ onStart, onRetry, onPause, onModeChange, onQualityChange }) {
+    this.panel = document.getElementById('panel');
+    this.title = document.getElementById('panelTitle');
+    this.message = document.getElementById('message');
+    this.stats = document.getElementById('results');
+    this.start = document.getElementById('start');
+    this.retry = document.getElementById('retry');
+    this.mute = document.getElementById('mute');
+    this.timer = document.getElementById('timer');
+    this.remaining = document.getElementById('remaining');
+    this.longestKill = document.getElementById('longestKill');
+    this.score = document.getElementById('score');
+    this.bossHealth = document.getElementById('bossHealth');
+    this.crosshair = document.getElementById('crosshair');
+    this.pause = document.getElementById('pause');
+    this.mode = document.getElementById('controlMode');
+    this.quality = document.getElementById('quality');
+    this.showPerformance = document.getElementById('showPerformance');
+    this.performance = document.getElementById('performance');
+    this.feedback = document.getElementById('feedback');
+    this.hitmarker = document.getElementById('hitmarker');
+    this.feedbackTime = this.statsTime = 0;
+    this.onQualityChange = () => onQualityChange(this.quality.value);
+    this.onPerformance = () => { this.performance.hidden = !this.showPerformance.checked; };
+    this.onPause = onPause;
+    this.onModeChange = () => onModeChange(this.mode.value === 'touch');
+    this.onStart = onStart;
+    this.onRetry = onRetry;
+    this.onMute = () => setMuted(this.mute.checked);
+    this.start.addEventListener('click', this.onStart);
+    this.retry.addEventListener('click', this.onRetry);
+    this.mute.addEventListener('change', this.onMute);
+    this.pause.addEventListener('click', this.onPause);
+    this.mode.addEventListener('change', this.onModeChange);
+    this.quality.addEventListener('change', this.onQualityChange);
+    this.showPerformance.addEventListener('change', this.onPerformance);
   }
-  setTimeout(() => requestAnimationFrame(fade), 2500);
+  setTouchMode(enabled) {
+    this.touchMode = enabled;
+    this.mode.value = enabled ? 'touch' : 'desktop';
+    document.body.classList.toggle('touch-mode', enabled);
+  }
+  setPhase(phase) {
+    const visible = ['ready', 'paused', 'results'].includes(phase);
+    this.panel.hidden = !visible;
+    this.crosshair.hidden = visible;
+    this.pause.hidden = visible;
+    if (visible) { this.feedback.hidden = this.hitmarker.hidden = true; this.feedbackTime = 0; }
+    this.start.hidden = phase === 'results';
+    this.retry.hidden = phase !== 'results';
+    this.stats.hidden = phase !== 'results';
+    this.title.textContent = phase === 'paused' ? 'Run paused' : phase === 'results' ? 'Range cleared' : 'KPM';
+    this.start.textContent = phase === 'paused' ? 'Resume' : 'Start';
+    this.message.textContent = phase === 'paused'
+      ? 'Your run is paused. Resume when you are ready.'
+      : 'Clear 13 targets, defeat the boss, and beat your best time.';
+    if (visible) (phase === 'results' ? this.retry : this.start).focus();
+  }
+  update(run, remaining, boss) {
+    this.timer.textContent = formatTime(run.elapsed);
+    this.remaining.textContent = boss ? 'Boss: ' + Math.ceil(boss.health) + ' HP' : 'Enemies: ' + remaining;
+    this.longestKill.textContent = 'Longest kill: ' + run.longestKill.toFixed(2) + 'm';
+    const stats = run.summary();
+    this.score.textContent = 'KPM: ' + stats.kpm.toFixed(1) + ' · Accuracy: ' + stats.accuracy.toFixed(1) + '% · Combo: ' + run.combo;
+    this.bossHealth.hidden = !boss;
+    if (boss) {
+      this.bossHealth.max = boss.maxHealth;
+      this.bossHealth.value = boss.health;
+    }
+  }
+  showMessage(text) { this.message.textContent = text; }
+  flashHit(text) {
+    this.feedbackTime = 0.6;
+    this.feedback.textContent = text;
+    this.feedback.hidden = this.hitmarker.hidden = false;
+  }
+  tick(seconds, quality, active) {
+    if (active) this.feedbackTime = Math.max(0, this.feedbackTime - seconds);
+    this.hitmarker.hidden = this.feedbackTime < 0.46;
+    this.feedback.hidden = this.feedbackTime === 0;
+    this.statsTime += seconds;
+    if (this.showPerformance.checked && this.statsTime > 0.5) {
+      this.performance.textContent = quality.readout(this.touchMode);
+      this.performance.title = quality.readout();
+      this.statsTime = 0;
+    }
+  }
+  showResults(stats, best) {
+    this.setPhase('results');
+    this.message.textContent = 'All targets and the boss defeated. Retry for a faster, more accurate run.';
+    this.stats.replaceChildren();
+    const rows = [
+      ['Time', stats.time.toFixed(2) + 's (best ' + best.time.toFixed(2) + 's)'],
+      ['Accuracy', stats.accuracy.toFixed(1) + '%'],
+      ['Targets', String(stats.kills)],
+      ['KPM', stats.kpm.toFixed(1)],
+      ['Longest kill', stats.longestKill.toFixed(2) + 'm'],
+      ['Boss time', stats.bossTime.toFixed(2) + 's'],
+      ['Boss accuracy', stats.bossAccuracy.toFixed(1) + '%']
+    ];
+    for (const [name, value] of rows) {
+      const label = document.createElement('dt');
+      const text = document.createElement('dd');
+      label.textContent = name;
+      text.textContent = value;
+      this.stats.append(label, text);
+    }
+  }
+  dispose() {
+    this.start.removeEventListener('click', this.onStart);
+    this.retry.removeEventListener('click', this.onRetry);
+    this.mute.removeEventListener('change', this.onMute);
+    this.pause.removeEventListener('click', this.onPause);
+    this.mode.removeEventListener('change', this.onModeChange);
+    this.quality.removeEventListener('change', this.onQualityChange);
+    this.showPerformance.removeEventListener('change', this.onPerformance);
+  }
 }
-
-/**
- * Boss Health Bar Creation
- * Creates a visual health bar for the boss
- * @returns {Object} Health bar object containing sprite, canvas, and texture
- */
-export function createBossHealthBar() {
-  const canvas = document.createElement('canvas');
-  canvas.width = 256;
-  canvas.height = 32;
-  const ctx = canvas.getContext('2d');
-  
-  const texture = new THREE.CanvasTexture(canvas);
-  const material = new THREE.SpriteMaterial({ map: texture });
-  const sprite = new THREE.Sprite(material);
-  sprite.scale.set(4, 0.5, 1);
-  
-  return { sprite, canvas, texture };
-}
-
-/**
- * Boss Health Bar Update
- * Updates the visual representation of boss health
- * @param {Object} bossHealthBar - The health bar object
- * @param {number} bossHealth - Current boss health
- * @param {number} maxHealth - Maximum boss health
- */
-export function updateBossHealthBar(bossHealthBar, bossHealth, maxHealth) {
-  if (!bossHealthBar) return;
-  
-  const ctx = bossHealthBar.canvas.getContext('2d');
-  ctx.clearRect(0, 0, bossHealthBar.canvas.width, bossHealthBar.canvas.height);
-  
-  // Draw background
-  ctx.fillStyle = '#333333';
-  ctx.fillRect(0, 0, bossHealthBar.canvas.width, bossHealthBar.canvas.height);
-  
-  // Draw health bar with color based on remaining health
-  const healthPercent = bossHealth / maxHealth;
-  const barWidth = bossHealthBar.canvas.width * healthPercent;
-  ctx.fillStyle = healthPercent > 0.5 ? '#00ff00' : healthPercent > 0.25 ? '#ffff00' : '#ff0000';
-  ctx.fillRect(0, 0, barWidth, bossHealthBar.canvas.height);
-  
-  bossHealthBar.texture.needsUpdate = true;
-}
-
-/**
- * Show Victory Screen
- * Displays the victory screen with game statistics
- * @param {Object} stats - Game statistics
- * @param {Object} bossStats - Boss fight statistics
- * @returns {HTMLElement} The created statistics box element
- */
-export function showVictoryScreen(stats, bossStats) {
-  const best = updateBestStats(stats);
-  
-  // Create statistics box
-  const box = document.createElement("div");
-  box.style.position = "fixed";
-  box.style.bottom = "20px";
-  box.style.left = "50%";
-  box.style.transform = "translateX(-50%)";
-  box.style.color = "white";
-  box.style.background = "rgba(0,0,0,0.7)";
-  box.style.padding = "12px 20px";
-  box.style.font = "16px monospace";
-  box.style.border = "1px solid #888";
-  box.style.borderRadius = "10px";
-  box.style.zIndex = 9999;
-  
-  box.innerHTML = `
-    <div style="text-align: center; color: #ff4444; font-size: 20px; margin-bottom: 10px;">🏆 Victory! 🏆</div>
-    <div>🕓 Total Time: ${stats.time.toFixed(2)} sec (Best: ${best.time.toFixed(2)})</div>
-    <div>🎯 Accuracy: ${stats.accuracy.toFixed(1)}% (Best: ${best.accuracy.toFixed(1)}%)</div>
-    <div>💥 Enemies Killed: ${stats.kills} (Best: ${best.kills})</div>
-    <div>🔥 Kill Rate: ${stats.kpm.toFixed(2)}/min (Best: ${best.kpm.toFixed(2)})</div>
-    <div>📏 Longest Kill: ${stats.longestKill.toFixed(2)}m (Best: ${best.longestKill.toFixed(2)})</div>
-    <div style="border-top: 1px solid #666; margin: 10px 0;"></div>
-    <div style="color: #ff4444; font-weight: bold;">Boss Fight Stats:</div>
-    <div>⚔️ Boss Fight Time: ${bossStats.time.toFixed(2)} sec</div>
-    <div>🎯 Boss Fight Accuracy: ${bossStats.accuracy.toFixed(1)}%</div>
-    <div>💢 Damage Per Second: ${bossStats.dps.toFixed(1)}</div>
-    <div>🎯 Total Hits: ${bossStats.hits}</div>
-    <div>⚡ Total Damage: ${bossStats.damage}</div>
-    <div style="margin-top: 10px; color: #4CAF50;">Shoot the green door to advance to the next level!</div>
-  `;
-  
-  document.body.appendChild(box);
-  return box;
-} 
