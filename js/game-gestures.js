@@ -13,7 +13,7 @@ export class GameGestures {
       for(const touch of event.changedTouches || []) {
         if(this.touches.delete(touch.identifier))owned=true;
       }
-      // Includes the final shot whose pointerdown may have opened results.
+      // Includes the final shot whose pointer event may have opened results.
       if((owned || (this.active&&!this.nativeButton(event)))&&event.cancelable)event.preventDefault();
     };
     this.gesture=event=>{if(this.active&&event.cancelable)event.preventDefault();};

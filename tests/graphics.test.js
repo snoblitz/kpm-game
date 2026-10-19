@@ -74,6 +74,8 @@ test('adaptive resolution uses bounded frame samples and ignores pauses and long
   quality.setMode('low');assert.equal(quality.ratio,1);
   quality.setMode('auto');quality.setTouch(false);assert.equal(quality.ratio,1.5);
   assert.match(quality.readout(),/25 draws/);
+  assert.match(quality.readout(true),/FPS \| .* ms \| .*x/);
+  assert.ok(quality.readout(true).length<=30);
 });
 
 test('weapon feedback moves only the weapon, resets, and adds no light or per-shot resources',()=>{

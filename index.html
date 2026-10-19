@@ -31,14 +31,11 @@
     #pause { position: fixed; z-index: 12; top: max(8px, env(safe-area-inset-top)); right: max(8px, env(safe-area-inset-right)); margin: 0; padding: 8px 12px; font-size: 14px; }
     #touchControls { position: fixed; z-index: 6; inset: 0; pointer-events: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
     #lookPad { position: absolute; inset: 0 0 0 45%; pointer-events: auto; touch-action: none; }
-    #lookPad span { position: absolute; top: 32%; right: max(18px, env(safe-area-inset-right)); color: #fff9; font-size: 11px; pointer-events: none; }
+    #lookPad span { position: absolute; bottom: max(30px, env(safe-area-inset-bottom)); right: max(18px, env(safe-area-inset-right)); color: #fff9; font-size: 10px; line-height: 1.6; text-align: right; pointer-events: none; }
     #movePad { position: absolute; bottom: max(24px, env(safe-area-inset-bottom)); left: max(20px, env(safe-area-inset-left)); width: 136px; height: 136px; border: 2px solid #ffffff80; border-radius: 50%; background: #0b151b66; pointer-events: auto; touch-action: none; display: grid; place-items: center; }
     #moveStick { width: 48px; height: 48px; border: 2px solid #def; border-radius: 50%; background: #ffffff55; pointer-events: none; }
     #movePad span { position: absolute; bottom: 6px; color: #fff; font-size: 10px; pointer-events: none; }
-    #touchActions { position: absolute; right: max(20px, env(safe-area-inset-right)); bottom: max(24px, env(safe-area-inset-bottom)); display: flex; align-items: flex-end; gap: 12px; }
-    #touchActions button { pointer-events: auto; touch-action: none; width: 76px; height: 76px; margin: 0; padding: 0; border: 2px solid #c2e9ff; border-radius: 50%; color: white; background: #12304dbf; font-size: 14px; }
-    #touchActions #fireButton { width: 88px; height: 88px; background: #772d22cf; border-color: #ffb499; }
-    #touchActions button.pressed, #movePad.pressed { background: #527d6bcc; }
+    #movePad.pressed { background: #527d6bcc; }
     .touch-instructions { display: none; }
     .touch-mode .touch-instructions { display: block; }
     .touch-mode .desktop-instructions { display: none; }
@@ -54,9 +51,6 @@
     }
     @media (max-width: 380px), (max-height: 400px) {
       #movePad { width: 112px; height: 112px; bottom: max(14px, env(safe-area-inset-bottom)); left: max(12px, env(safe-area-inset-left)); }
-      #touchActions { gap: 10px; right: max(12px, env(safe-area-inset-right)); bottom: max(14px, env(safe-area-inset-bottom)); }
-      #touchActions button { width: 58px; height: 58px; }
-      #touchActions #fireButton { width: 70px; height: 70px; }
     }
     @media (max-height: 500px) { #panel { align-items: start; } }
   </style>
@@ -79,12 +73,8 @@
   <output id="performance" aria-label="Rendering performance" hidden></output>
   <button id="pause" type="button" data-native-tap aria-label="Pause game" hidden>Pause</button>
   <div id="touchControls" hidden>
-    <div id="lookPad" aria-label="Swipe to look"><span>SWIPE TO LOOK</span></div>
+    <div id="lookPad" aria-label="Drag to aim, tap to fire, quick upward flick and release to jump"><span>DRAG: AIM · TAP: FIRE<br>QUICK FLICK UP + RELEASE: JUMP</span></div>
     <div id="movePad" aria-label="Movement thumbstick"><div id="moveStick"></div><span>MOVE / RUN</span></div>
-    <div id="touchActions">
-      <button id="jumpButton" type="button" aria-label="Jump">JUMP</button>
-      <button id="fireButton" type="button" aria-label="Fire one shot">FIRE</button>
-    </div>
   </div>
   </div>
   <section id="panel" aria-labelledby="panelTitle">
@@ -97,7 +87,7 @@
       <label for="quality">Visual quality</label>
       <select id="quality"><option value="auto">Auto · adaptive</option><option value="low">Low · battery saver</option><option value="high">High · sharper resolution</option></select>
       <p class="desktop-instructions">WASD or arrows: move · Mouse: look · Left click: shoot<br>Shift: run · Space: jump · Esc: pause</p>
-      <p class="touch-instructions">Left stick: move; push to its edge to run. Swipe the right side to look. Tap FIRE for each shot; hold JUMP to jump. Use Pause to take a break. Landscape gives you more room.</p>
+      <p class="touch-instructions">Left stick: move; edge: run. Right side: drag to aim, tap for each shot. Tap rapidly to fire rapidly. Jump: flick straight up quickly, then release. Start an upward aim slowly or hold briefly before dragging. Pause takes a break.</p>
       <p>Enemies are moving targets; this is a speed and accuracy challenge.</p>
       <dl id="results" hidden></dl>
       <button id="start" type="button">Start</button>

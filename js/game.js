@@ -77,7 +77,6 @@ export class Game {
     this.touch = new TouchControls({
       root: document.getElementById('touchControls'), move: document.getElementById('movePad'),
       stick: document.getElementById('moveStick'), look: document.getElementById('lookPad'),
-      fire: document.getElementById('fireButton'), jump: document.getElementById('jumpButton'),
       onLook: (x, y, sensitivity) => this.controls.look(x, y, sensitivity), onFire: () => this.shoot(),
       viewport: () => [this.viewport.size.width,this.viewport.size.height]
     });
@@ -187,7 +186,9 @@ export class Game {
     if (!this.run.active) return;
     this.run.advance(elapsed);
     const delta = Math.min(elapsed, MAX_FRAME_DELTA);
+    if (this.touchMode) this.touch.update?.(now);
     this.player.update(delta, this.keys, this.colliders, this.touchMode ? this.touch.input : null);
+    if (this.touchMode) this.touch.input.jump = false;
     this.enemyManager.update(delta, this.colliders);
     if (this.run.phase === 'boss') this.bossManager.update(delta, this.camera.position, this.colliders);
     this.levelManager.updateSun(delta);

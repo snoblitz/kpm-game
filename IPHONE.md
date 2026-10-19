@@ -33,9 +33,12 @@ The permitted browser automation check was attempted again on Obsidian and faile
 before opening a browser: `trusted Node process exited unexpectedly; kernel reset`.
 No physical iPhone verification was available. The change is tested at event and
 layout-state level, not confirmed against Safari's native zoom recognizer or an
-installed Home Screen session. Check rapid FIRE taps while moving/looking,
+installed Home Screen session. Check rapid right-side taps while moving,
 portrait/landscape rotation, Safari toolbar changes, menu zoom, Pause, Resume and
 the Home Screen launch on a real iPhone.
+
+The later right-thumb gesture update replaces the visible fire/jump buttons.
+See [TOUCH-GESTURES.md](TOUCH-GESTURES.md) for the classifier and updated phone QA.
 
 ## Primary documentation consulted
 

@@ -8,6 +8,7 @@ const { EnemyManager } = await import('../js/enemy.js');
 const { BossManager } = await import('../js/boss.js');
 const { Effects } = await import('../js/textures.js');
 const { ENEMY_COUNT, ENEMY_SPEED } = await import('../js/constants.js');
+const { TouchControls } = await import('../js/touch-controls.js');
 
 function fixture() {
   let time = 0;
@@ -217,6 +218,7 @@ test('touch starts, moves, shoots, pauses, resumes and retries without requestin
   game.touch.input.jump=true;
   advance(0.05);
   assert.ok(game.camera.position.y>2);
+  assert.equal(game.touch.input.jump,false); // A flick is a one-frame request, never a held auto-jump.
   game.shoot();
   assert.equal(game.run.shotsFired,1);
   game.onBlur();
@@ -245,4 +247,24 @@ test('analog diagonals preserve strength and full movement is bounded with mixed
   game.player.reset();
   game.player.update(0.05,{KeyW:true},game.colliders,{x:1,y:1});
   near(Math.hypot(game.camera.position.x,game.camera.position.z),0.5);
+});
+
+test('right-pad taps reach real shot/raycast counters individually between frames, and rotation discards a pending tap', () => {
+  const {game}=fixture();
+  class Pad extends EventTarget {
+    constructor(){super();this.style={};this.classList={add(){},remove(){}};}
+    setPointerCapture(){} hasPointerCapture(){return false;}
+    send(type,time){const e=new Event(type,{cancelable:true});Object.assign(e,{pointerId:1,pointerType:'touch',clientX:300,clientY:180});Object.defineProperty(e,'timeStamp',{value:time});this.dispatchEvent(e);}
+  }
+  const look=new Pad();
+  game.touch=new TouchControls({root:new Pad(),move:new Pad(),stick:new Pad(),look,onLook(){},onFire:()=>game.shoot()});
+  game.setTouchMode(true);game.requestPlay();game.enemyManager.clear();
+  for(let i=0;i<100;i++){look.send('pointerdown',i*40);look.send('pointerup',i*40+20);}
+  assert.equal(game.run.shotsFired,100);assert.equal(game.run.elapsed,0);
+  assert.equal(game.effects.items.length,8); // Presentation pool does not throttle hit registration.
+  look.send('pointerdown',4100);
+  game.renderer={setSize(){}};game.onResize({width:844,height:390});
+  look.send('pointerup',4120);assert.equal(game.run.shotsFired,100);
+  game.pause();look.send('pointerdown',4200);look.send('pointerup',4220);
+  assert.equal(game.run.shotsFired,100);game.touch.dispose();
 });

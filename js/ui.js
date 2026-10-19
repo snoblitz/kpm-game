@@ -40,6 +40,7 @@ export class GameUI {
     this.showPerformance.addEventListener('change', this.onPerformance);
   }
   setTouchMode(enabled) {
+    this.touchMode = enabled;
     this.mode.value = enabled ? 'touch' : 'desktop';
     document.body.classList.toggle('touch-mode', enabled);
   }
@@ -83,7 +84,9 @@ export class GameUI {
     this.feedback.hidden = this.feedbackTime === 0;
     this.statsTime += seconds;
     if (this.showPerformance.checked && this.statsTime > 0.5) {
-      this.performance.textContent = quality.readout(); this.statsTime = 0;
+      this.performance.textContent = quality.readout(this.touchMode);
+      this.performance.title = quality.readout();
+      this.statsTime = 0;
     }
   }
   showResults(stats, best) {

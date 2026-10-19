@@ -28,8 +28,9 @@ export class RenderQuality {
       this.sampleCount=0; this.sampleIndex=0; this.total=0; this.sinceAdjustment=0;
     }
   }
-  readout() {
+  readout(compact = false) {
     const render=this.renderer.info.render, memory=this.renderer.info.memory;
+    if (compact) return `${this.mean?Math.round(1/this.mean):'--'} FPS | ${(this.mean*1000).toFixed(1)} ms | ${this.ratio.toFixed(2)}x`;
     return `${this.mean?Math.round(1/this.mean):'--'} FPS · ${(this.mean*1000).toFixed(1)} ms/frame · ${render.calls} draws · ${render.triangles} tris · ${memory.geometries} geom · ${memory.textures} tex · ${this.ratio.toFixed(2)}×`;
   }
 }

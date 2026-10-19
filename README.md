@@ -21,13 +21,18 @@ On phones, touch controls are selected automatically. You can also choose
 
 - Tap **Start** to begin and unlock audio; touch play does not request mouse capture.
 - Drag the **left stick** to move; push it to the edge to run.
-- **Swipe the right side** to look, then lift and reposition your thumb as needed.
-- Tap **FIRE** once per shot. Hold **JUMP** to jump. These work alongside movement and looking.
+- **Drag the right side** to aim, then lift and reposition your thumb as needed.
+- **Tap the right side** for one shot on release. Rapid taps fire individually, with no debounce or added cooldown.
+- **Flick straight up quickly and release** on the right side to jump. Start an upward aim slowly, or hold briefly before dragging, to distinguish it from jumping.
 - Tap **Pause**, then **Resume** to continue. **Retry** starts a fresh run after results.
 - Portrait and landscape layouts are supported; landscape offers more aiming space.
 
 Each gesture keeps its own pointer ID until release. Cancellation, loss of
 capture, pausing, app switching and resizing clear held touch input.
+The right side tracks one thumb at a time alongside the independent left stick.
+Aiming drags cannot become jumps later. Jump requests last one physics update and
+still require the player to be on the ground. See [TOUCH-GESTURES.md](TOUCH-GESTURES.md)
+for gesture thresholds, ambiguity and device verification limits.
 
 ### More screen space on iPhone
 
@@ -63,8 +68,9 @@ brief marker and confirmation. Targets are taller and easier to distinguish.
 - **Auto** caps render pixel ratio at 1.25 on touch devices and 1.5 on desktop.
   Sustained frame intervals above 22 ms lower the ratio in steps, down to 0.75.
 - **Low** caps pixel ratio at 1.0; **High** caps it at 2.0. Manual modes do not adapt.
-- **Show performance stats** displays frame intervals/FPS, actual renderer draw
-  calls and triangles, geometry/texture counts, and current pixel ratio.
+- **Show performance stats** displays compact FPS, frame time and resolution at
+  the upper-right edge on phones. Desktop shows the additional draw, triangle,
+  geometry and texture counters; the full readout is also in the output's title.
 
 There are no dynamic shadows, postprocessing passes, downloaded textures, or
 added lights. Wall details use instancing; effects reuse a fixed pool. These
@@ -110,7 +116,7 @@ Before releasing, also check in a browser:
 4. Press Esc and switch tabs while moving; time freezes and keys do not stay held.
 5. Resize the window; the canvas, aiming and HUD remain aligned.
 6. Check console errors and audio/mute behavior.
-7. On a phone, move, look, fire and jump together; releasing one control must not stop the others.
+7. On a phone, hold the left stick while aiming, tapping rapidly to fire, and flicking up to jump; right-thumb actions must not stop movement.
 8. Hold the stick and switch apps, rotate the phone, or pause; no input should remain stuck.
 9. Check portrait/landscape safe areas, panel scrolling, mute, resume and retry.
 10. Toggle performance stats and each quality setting. Measure on actual phones;
