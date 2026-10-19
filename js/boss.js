@@ -1,199 +1,91 @@
 import { ROOM, BASE_BOSS_HEALTH, MIN_BOSS_HEALTH, BOSS_SPEED } from './constants.js';
 import { checkBossCollision } from './collision.js';
-import { spawnSpark } from './textures.js';
 import { playSound } from './audio.js';
+import { disposeObjects } from './textures.js';
 
-/**
- * Boss Class
- * Manages boss behavior and state
- */
 export class Boss {
-  constructor(scene, position) {
-    // Create boss mesh - larger and more intimidating than regular enemies
+  constructor(scene, health) {
+    this.scene = scene;
     this.mesh = new THREE.Mesh(
       new THREE.BoxGeometry(2, 2, 2),
-      new THREE.MeshLambertMaterial({ color: 0x8B0000 }) // Dark red
+      new THREE.MeshLambertMaterial({ color: 0x8B0000 })
     );
-    this.mesh.position.copy(position);
+    this.mesh.position.set(0, 1, 0);
     this.mesh.userData.isBoss = true;
     this.mesh.castShadow = this.mesh.receiveShadow = true;
-
-    // Add glow effect
-    const glowGeometry = new THREE.BoxGeometry(2.2, 2.2, 2.2);
-    const glowMaterial = new THREE.MeshBasicMaterial({
-      color: 0xff0000,
-      transparent: true,
-      opacity: 0.3
-    });
-    this.glow = new THREE.Mesh(glowGeometry, glowMaterial);
+    this.glow = new THREE.Mesh(
+      new THREE.BoxGeometry(2.2, 2.2, 2.2),
+      new THREE.MeshBasicMaterial({ color: 0xff0000, transparent: true, opacity: 0.3 })
+    );
     this.mesh.add(this.glow);
-
-    scene.add(this.mesh);
-    this.health = BASE_BOSS_HEALTH;
+    this.health = this.maxHealth = health;
     this.targetPosition = null;
-    this.scene = scene;
+    this.nextPosition = new THREE.Vector3();
+    this.direction = new THREE.Vector3();
+    this.time = 0;
+    this.hitFlash = 0;
+    scene.add(this.mesh);
   }
-
-  /**
-   * Update boss position and handle collisions
-   * @param {number} dt - Delta time
-   * @param {THREE.Vector3} playerPosition - Player's position
-   * @param {Array} colliders - Array of collidable objects
-   */
-  update(dt, playerPosition, colliders) {
-    // Update target position periodically
+  update(delta, playerPosition, colliders) {
+    this.time += delta;
+    this.hitFlash = Math.max(0, this.hitFlash - delta);
+    this.mesh.material.emissive.setHex(this.hitFlash ? 0xff0000 : 0x000000);
     if (!this.targetPosition || this.mesh.position.distanceTo(this.targetPosition) < 1) {
       this.targetPosition = this.getNewTargetPosition(playerPosition);
     }
-
-    // Move towards target
-    const direction = new THREE.Vector3()
-      .subVectors(this.targetPosition, this.mesh.position)
-      .normalize();
-    
-    const step = BOSS_SPEED * dt;
-    const newPosition = new THREE.Vector3()
-      .copy(this.mesh.position)
-      .add(direction.multiplyScalar(step));
-
-    // Check for collisions
-    if (!checkBossCollision(newPosition, colliders)) {
-      this.mesh.position.copy(newPosition);
-    } else {
-      this.targetPosition = this.getNewTargetPosition(playerPosition);
-    }
-
-    // Update glow effect
-    const glowIntensity = 0.3 + 0.1 * Math.sin(performance.now() * 0.003);
-    this.glow.material.opacity = glowIntensity;
+    this.direction.subVectors(this.targetPosition, this.mesh.position);
+    const distance = this.direction.length();
+    this.nextPosition.copy(this.mesh.position).addScaledVector(this.direction.normalize(), Math.min(distance, BOSS_SPEED * delta));
+    if (checkBossCollision(this.nextPosition, colliders)) this.targetPosition = null;
+    else this.mesh.position.copy(this.nextPosition);
+    this.glow.material.opacity = 0.3 + 0.1 * Math.sin(this.time * 3);
   }
-
   getNewTargetPosition(playerPosition) {
-    // 70% chance to move towards player, 30% chance to move to random position
-    if (Math.random() < 0.7) {
-      return new THREE.Vector3(
-        playerPosition.x + (Math.random() - 0.5) * 5,
-        1,
-        playerPosition.z + (Math.random() - 0.5) * 5
-      );
-    } else {
-      return new THREE.Vector3(
-        (Math.random() - 0.5) * ROOM * 1.5,
-        1,
-        (Math.random() - 0.5) * ROOM * 1.5
-      );
-    }
+    const target = Math.random() < 0.7
+      ? new THREE.Vector3(playerPosition.x + (Math.random() - 0.5) * 5, 1, playerPosition.z + (Math.random() - 0.5) * 5)
+      : new THREE.Vector3((Math.random() - 0.5) * ROOM * 1.5, 1, (Math.random() - 0.5) * ROOM * 1.5);
+    target.x = Math.max(-ROOM + 3, Math.min(ROOM - 3, target.x));
+    target.z = Math.max(-ROOM + 3, Math.min(ROOM - 3, target.z));
+    return target;
   }
-
-  /**
-   * Handle boss hit
-   * @param {number} amount - Amount of damage to deal
-   * @param {THREE.Vector3} hitPoint - Point of impact
-   * @returns {boolean} True if boss was defeated
-   */
-  takeDamage(amount, hitPoint) {
-    this.health -= amount;
-    spawnSpark(this.scene, hitPoint);
+  takeDamage(amount) {
+    const damage = Math.min(this.health, amount);
+    this.health -= damage;
+    this.hitFlash = 0.1;
     playSound('boss-hit');
-    
-    // Visual feedback
-    this.mesh.material.emissive.setHex(0xff0000);
-    setTimeout(() => {
-      this.mesh.material.emissive.setHex(0x000000);
-    }, 100);
-
-    return this.health <= 0;
+    return damage;
+  }
+  dispose() {
+    this.scene.remove(this.mesh);
+    disposeObjects([this.mesh]);
   }
 }
 
-/**
- * Boss Manager
- * Manages boss state and behavior
- */
 export class BossManager {
-  constructor(scene, game) {
+  constructor(scene) {
     this.scene = scene;
-    this.game = game;
     this.boss = null;
-    this.isBossFight = false;
-    this.damageDealt = 0;
   }
-
-  /**
-   * Start a new boss fight
-   */
-  startBossFight() {
-    // Calculate boss health based on how quickly player cleared the level
-    const timeBonus = Math.max(0, 30000 - (performance.now() - this.game.startTime));
-    const health = Math.max(MIN_BOSS_HEALTH, BASE_BOSS_HEALTH - timeBonus / 1000);
-
-    // Spawn boss in center of room
-    this.boss = new Boss(this.scene, new THREE.Vector3(0, 1, 0));
-    this.boss.health = health;
-    this.isBossFight = true;
-    this.damageDealt = 0;
-
+  startBossFight(clearSeconds, playerPosition = new THREE.Vector3()) {
+    this.clear();
+    const timeBonus = Math.max(0, 30 - clearSeconds);
+    this.boss = new Boss(this.scene, Math.max(MIN_BOSS_HEALTH, BASE_BOSS_HEALTH - timeBonus));
+    this.boss.mesh.position.set(playerPosition.x > 0 ? -8 : 8, 1, playerPosition.z > 0 ? -8 : 8);
     playSound('boss-spawn');
   }
-
-  /**
-   * Update boss state
-   * @param {number} dt - Delta time
-   * @param {Array} colliders - Array of collidable objects
-   */
-  update(dt, colliders) {
-    if (this.isBossFight && this.boss) {
-      this.boss.update(dt, this.game.camera.position, colliders);
+  update(delta, playerPosition, colliders) { this.boss?.update(delta, playerPosition, colliders); }
+  handleHit() {
+    if (!this.boss) return { damage: 0, defeated: false };
+    const damage = this.boss.takeDamage(10);
+    const defeated = this.boss.health <= 0;
+    if (defeated) {
+      this.clear();
+      playSound('boss-death');
     }
+    return { damage, defeated };
   }
-
-  /**
-   * Handle boss hit
-   * @param {THREE.Vector3} hitPoint - Point of impact
-   * @returns {boolean} True if boss was defeated
-   */
-  handleHit(hitPoint) {
-    if (!this.boss) return false;
-
-    const damage = 10;
-    this.damageDealt += damage;
-    const isDead = this.boss.takeDamage(damage, hitPoint);
-
-    if (isDead) {
-      this.endBossFight();
-      return true;
-    }
-    return false;
-  }
-
-  /**
-   * End the current boss fight
-   */
-  endBossFight() {
-    if (this.boss) {
-      this.scene.remove(this.boss.mesh);
-      this.boss = null;
-    }
-    this.isBossFight = false;
-    playSound('boss-death');
-  }
-
-  /**
-   * Get the current health of the boss
-   * @returns {number} Boss health
-   */
-  getBossHealth() {
-    return this.boss ? this.boss.health : 0;
-  }
-
-  /**
-   * Clear boss state
-   */
   clear() {
-    if (this.boss) {
-      this.scene.remove(this.boss.mesh);
-      this.boss = null;
-    }
-    this.isBossFight = false;
+    this.boss?.dispose();
+    this.boss = null;
   }
-} 
+}

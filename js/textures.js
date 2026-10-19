@@ -1,84 +1,59 @@
-/**
- * Procedural Brick Texture Generator
- * Creates a repeatable brick pattern texture for walls
- * @returns {THREE.Texture} Generated brick texture
- */
-export function makeBrickTexture() {
-  const W = 128, H = 128;              // Texture dimensions
-  const bw = 32, bh = 16;              // Brick dimensions
-  const ctx = Object.assign(document.createElement('canvas'), {width: W, height: H}).getContext('2d');
-  
-  // Background color
-  ctx.fillStyle = '#402a1f';
-  ctx.fillRect(0, 0, W, H);
-  
-  // Generate brick pattern
-  for(let r = 0; r < H/bh; r++) {
-    const off = r % 2 ? bw/2 : 0;  // Offset alternate rows
-    for(let c = -1; c < W/bw + 1; c++) {
-      const x = c * bw + off;
-      const y = r * bh;
-      const shade = 110 + Math.random() * 30 | 0;  // Random brick shade
-      ctx.fillStyle = `rgb(${shade},${60 + Math.random() * 20 | 0},40)`;
-      ctx.fillRect(x + 1, y + 1, bw - 2, bh - 2);
+// Effects have a single owner and advance on the gameplay clock, including pause.
+export class Effects {
+  constructor(scene) {
+    this.scene = scene;
+    this.items = [];
+  }
+  tracer(start, end) {
+    const geometry = new THREE.BufferGeometry().setFromPoints([start.clone(), end.clone()]);
+    const material = new THREE.LineBasicMaterial({ color: 0xffffaa, transparent: true });
+    this.add(new THREE.Line(geometry, material), 0.12, 'tracer');
+  }
+  spark(position) {
+    const mesh = new THREE.Mesh(
+      new THREE.SphereGeometry(0.1, 6, 6),
+      new THREE.MeshBasicMaterial({ color: 0xffff44 })
+    );
+    mesh.position.copy(position);
+    this.add(mesh, 0.2, 'spark');
+  }
+  add(mesh, duration, type) {
+    this.scene.add(mesh);
+    this.items.push({ mesh, duration, remaining: duration, type });
+  }
+  update(delta) {
+    for (let i = this.items.length - 1; i >= 0; i--) {
+      const item = this.items[i];
+      item.remaining -= delta;
+      if (item.remaining <= 0) {
+        this.remove(i);
+      } else if (item.type === 'tracer') {
+        item.mesh.material.opacity = item.remaining / item.duration;
+      } else {
+        item.mesh.scale.setScalar(item.remaining / item.duration);
+      }
     }
   }
-  
-  // Create Three.js texture
-  const tex = new THREE.CanvasTexture(ctx.canvas);
-  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-  tex.repeat.set(1, 1);
-  return tex;
+  remove(index) {
+    const { mesh } = this.items[index];
+    this.scene.remove(mesh);
+    mesh.geometry.dispose();
+    mesh.material.dispose();
+    this.items.splice(index, 1);
+  }
+  clear() { while (this.items.length) this.remove(this.items.length - 1); }
 }
 
-/**
- * Visual Effects - Bullet Tracer
- * Creates a temporary line showing bullet path
- * @param {THREE.Scene} scene - The game scene
- * @param {THREE.Vector3} start - Starting position
- * @param {THREE.Vector3} end - Impact position
- */
-export function spawnTracer(scene, start, end) {
-  const mat = new THREE.LineBasicMaterial({
-    color: 0xffffaa,
-    transparent: true,
-    opacity: 1
-  });
-  const geo = new THREE.BufferGeometry().setFromPoints([start.clone(), end.clone()]);
-  const tracer = new THREE.Line(geo, mat);
-  scene.add(tracer);
-  
-  // Fade out effect
-  let t = 0;
-  const fade = () => {
-    t += 0.05;
-    mat.opacity = 1 - t;
-    if (t < 1) requestAnimationFrame(fade);
-    else scene.remove(tracer);
-  };
-  fade();
+export function disposeObjects(objects) {
+  // Shared geometry/materials are disposed exactly once.
+  const geometries = new Set();
+  const materials = new Set();
+  objects.forEach(object => object.traverse(child => {
+    if (child.geometry) geometries.add(child.geometry);
+    if (child.material) {
+      (Array.isArray(child.material) ? child.material : [child.material]).forEach(m => materials.add(m));
+    }
+  }));
+  geometries.forEach(geometry => geometry.dispose());
+  materials.forEach(material => material.dispose());
 }
-
-/**
- * Visual Effects - Impact Spark
- * Creates a temporary spark effect at bullet impact point
- * @param {THREE.Scene} scene - The game scene
- * @param {THREE.Vector3} pos - Impact position
- */
-export function spawnSpark(scene, pos) {
-  const geo = new THREE.SphereGeometry(0.1, 6, 6);
-  const mat = new THREE.MeshBasicMaterial({ color: 0xffff44 });
-  const spark = new THREE.Mesh(geo, mat);
-  spark.position.copy(pos);
-  scene.add(spark);
-  
-  // Shrink effect
-  let scale = 1;
-  const decay = () => {
-    scale *= 0.85;
-    spark.scale.setScalar(scale);
-    if (scale > 0.05) requestAnimationFrame(decay);
-    else scene.remove(spark);
-  };
-  decay();
-} 
