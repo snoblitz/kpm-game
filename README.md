@@ -29,6 +29,23 @@ On phones, touch controls are selected automatically. You can also choose
 Each gesture keeps its own pointer ID until release. Cancellation, loss of
 capture, pausing, app switching and resizing clear held touch input.
 
+### More screen space on iPhone
+
+Open the game in **Safari**, then **Share → Add to Home Screen**. Enable
+**Open as Web App** if that option appears, tap **Add**, and launch **KPM from the
+Home Screen**. Sign in again if asked. This is the supported route to playing
+without Safari's address and tab bars; ordinary browser tabs may keep their UI.
+
+The start/pause panel also offers **Enter fullscreen** only when the browser
+exposes a usable fullscreen API. Fullscreen is optional, requires a button tap,
+and can be declined by the browser. It is not assumed to work on every iPhone.
+
+Rapid-tap/gesture prevention applies to the play surface. The menu remains a
+separate scrollable, zoomable surface; there is no global `user-scalable=no` or
+`maximum-scale` restriction. The canvas and HUD follow the visual viewport as
+browser chrome changes, while pinch-zoomed menus retain their magnification.
+See [IPHONE.md](IPHONE.md) for verification limits and primary documentation.
+
 Enemies are moving targets, not attackers: this is a speed/accuracy challenge.
 Combos grow when successive target kills are less than two active seconds apart.
 Accuracy counts arena and boss shots; boss accuracy is also shown separately.

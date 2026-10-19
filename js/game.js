@@ -2,6 +2,9 @@ import { PointerLockControls } from './PointerLockControls.js';
 import { TouchControls } from './touch-controls.js';
 import { Weapon } from './weapon.js';
 import { RenderQuality } from './render-quality.js';
+import { GameViewport } from './game-viewport.js';
+import { GameGestures } from './game-gestures.js';
+import { ImmersiveMode } from './immersive-mode.js';
 import { LevelManager } from './level.js';
 import { EnemyManager } from './enemy.js';
 import { BossManager } from './boss.js';
@@ -33,11 +36,11 @@ export class Game {
     this.onMouseDown = event => { if (event.pointerType === 'mouse' && event.button === 0) this.shoot(); };
     this.onBlur = () => this.pause();
     this.onVisibility = () => { if (document.hidden) this.pause(); };
-    this.onResize = () => {
+    this.onResize = ({width,height}) => {
       this.touch?.reset();
-      this.camera.aspect = window.innerWidth / window.innerHeight;
+      this.camera.aspect = width / height;
       this.camera.updateProjectionMatrix();
-      this.renderer.setSize(window.innerWidth, window.innerHeight);
+      this.renderer.setSize(width,height);
     };
     this.onPageHide = event => {
       if (event.persisted) this.pause();
@@ -56,7 +59,14 @@ export class Game {
     this.renderer.shadowMap.enabled = false;
     this.renderer.outputEncoding = THREE.sRGBEncoding;
     this.quality = new RenderQuality(this.renderer);
-    document.body.appendChild(this.renderer.domElement);
+    this.surface = document.getElementById('playSurface');
+    this.surface.appendChild(this.renderer.domElement);
+    this.viewport = new GameViewport(document.getElementById('gameViewport'),this.onResize);
+    this.gestures = new GameGestures(this.surface);
+    this.immersive = new ImmersiveMode({
+      root:document.getElementById('gameViewport'),button:document.getElementById('immersive'),
+      status:document.getElementById('immersiveHelp'),onExit:()=>this.pause()
+    });
     this.controls = new PointerLockControls(this.camera, this.renderer.domElement, {
       onChange: locked => this.onLockChange(locked),
       onError: () => this.ui.showMessage('Mouse capture was not granted. Click Start or Resume to try again.')
@@ -69,7 +79,7 @@ export class Game {
       stick: document.getElementById('moveStick'), look: document.getElementById('lookPad'),
       fire: document.getElementById('fireButton'), jump: document.getElementById('jumpButton'),
       onLook: (x, y, sensitivity) => this.controls.look(x, y, sensitivity), onFire: () => this.shoot(),
-      viewport: () => [window.innerWidth, window.innerHeight]
+      viewport: () => [this.viewport.size.width,this.viewport.size.height]
     });
     this.setTouchMode(window.matchMedia('(pointer: coarse)').matches);
     this.levelManager = new LevelManager(this.scene);
@@ -85,7 +95,6 @@ export class Game {
     window.addEventListener('keydown', this.onKeyDown);
     window.addEventListener('keyup', this.onKeyUp);
     window.addEventListener('blur', this.onBlur);
-    window.addEventListener('resize', this.onResize);
     window.addEventListener('pagehide', this.onPageHide);
     document.addEventListener('visibilitychange', this.onVisibility);
     this.renderer.domElement.addEventListener('pointerdown', this.onMouseDown);
@@ -123,10 +132,12 @@ export class Game {
     this.last = this.now();
     this.ui.setPhase(this.run.phase);
     this.touch?.setActive(this.touchMode);
+    this.gestures?.setActive(true);
   }
   pause(unlock = true) {
     this.keys = {};
     this.touch?.setActive(false);
+    this.gestures?.setActive(false);
     this.weapon?.reset();
     if (!this.run.active) return;
     // Account for the active fraction since the previous frame, then freeze.
@@ -140,6 +151,7 @@ export class Game {
   resetRun(rebuild = true) {
     this.keys = {};
     this.touch?.setActive(false);
+    this.gestures?.setActive(false);
     this.effects.clear();
     this.weapon?.reset();
     this.enemyManager.clear();
@@ -222,6 +234,7 @@ export class Game {
     this.run.finish();
     this.keys = {};
     this.touch?.setActive(false);
+    this.gestures?.setActive(false);
     this.effects.clear();
     this.levelManager.unlockDoor();
     const stats = this.run.summary();
@@ -237,11 +250,13 @@ export class Game {
     window.removeEventListener('keydown', this.onKeyDown);
     window.removeEventListener('keyup', this.onKeyUp);
     window.removeEventListener('blur', this.onBlur);
-    window.removeEventListener('resize', this.onResize);
     window.removeEventListener('pagehide', this.onPageHide);
     document.removeEventListener('visibilitychange', this.onVisibility);
     this.renderer?.domElement.removeEventListener('pointerdown', this.onMouseDown);
     this.touch?.dispose();
+    this.gestures?.dispose();
+    this.viewport?.dispose();
+    this.immersive?.dispose();
     this.controls?.dispose();
     this.ui?.dispose();
     this.effects?.dispose();

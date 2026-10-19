@@ -1,4 +1,15 @@
 :root { color-scheme: dark; --ice: #a0f1ec; --amber: #ffcb89; --ink: #101e2d; }
+#gameViewport { position: fixed; left: var(--view-left,0px); top: var(--view-top,0px); width: var(--view-width,100vw); height: var(--view-height,100vh); overflow: hidden; isolation: isolate; }
+@supports(height:100dvh) { #gameViewport { height: var(--view-height,100dvh); } }
+#playSurface { position: absolute; inset: 0; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+#playSurface.playing, #playSurface.playing * { touch-action: none; }
+#playSurface > canvas { position: absolute; inset: 0; z-index: 0; }
+#gameViewport #hud, #gameViewport #crosshair, #gameViewport #hitmarker, #gameViewport #feedback, #gameViewport #performance, #gameViewport #pause, #gameViewport #touchControls, #gameViewport #panel { position: absolute; }
+#gameViewport #crosshair { z-index: 8; }
+#gameViewport #panel { touch-action: auto; }
+#immersiveHelp { border-left: 2px solid #416076; padding-left: 10px; font-size: 12px; }
+#gameViewport:fullscreen { left: 0; top: 0; background: #081321; }
+#gameViewport:-webkit-full-screen { left: 0; top: 0; background: #081321; }
 body { font-family: "Segoe UI", system-ui, sans-serif; background: #081321; }
 #hud { align-items: center; gap: 8px 18px; font-size: 15px; letter-spacing: .04em; text-shadow: 0 2px 4px #000; }
 #hudBrand { flex-basis: 100%; font-weight: 900; letter-spacing: .12em; color: var(--ice); }
