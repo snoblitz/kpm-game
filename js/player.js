@@ -15,9 +15,9 @@ export class Player {
     this.reset();
   }
 
-  update(deltaTime, keys, colliders) {
-    if (!this.controls.isLocked) return;
-    if (keys.Space && this.onGround) {
+  update(deltaTime, keys, colliders, touch = null) {
+    if (!this.controls.isLocked && !touch) return;
+    if ((keys.Space || touch?.jump) && this.onGround) {
       this.velocity.y = JUMP;
       this.onGround = false;
     }
@@ -27,12 +27,12 @@ export class Player {
     this.forward.y = 0;
     this.forward.normalize();
     this.right.crossVectors(this.forward, this.camera.up).normalize();
-    const forward = Number(!!(keys.KeyW || keys.ArrowUp)) - Number(!!(keys.KeyS || keys.ArrowDown));
-    const sideways = Number(!!(keys.KeyD || keys.ArrowRight)) - Number(!!(keys.KeyA || keys.ArrowLeft));
+    const forward = Number(!!(keys.KeyW || keys.ArrowUp)) - Number(!!(keys.KeyS || keys.ArrowDown)) + (touch?.y || 0);
+    const sideways = Number(!!(keys.KeyD || keys.ArrowRight)) - Number(!!(keys.KeyA || keys.ArrowLeft)) + (touch?.x || 0);
     this.movement.copy(this.forward).multiplyScalar(forward).addScaledVector(this.right, sideways);
     if (this.movement.lengthSq() > 0) {
-      const speed = keys.ShiftLeft || keys.ShiftRight ? RUN : WALK;
-      this.movement.normalize().multiplyScalar(speed * deltaTime);
+      const speed = keys.ShiftLeft || keys.ShiftRight || touch?.run ? RUN : WALK;
+      this.movement.multiplyScalar(speed * deltaTime / Math.max(1, this.movement.length()));
       const newX = this.position.x + this.movement.x;
       const newZ = this.position.z + this.movement.z;
       if (!blocked(newX, this.position.z, colliders)) this.position.x = newX;

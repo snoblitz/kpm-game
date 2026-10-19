@@ -2,7 +2,7 @@ import { setMuted } from './audio.js';
 import { formatTime } from './utils.js';
 
 export class GameUI {
-  constructor({ onStart, onRetry }) {
+  constructor({ onStart, onRetry, onPause, onModeChange }) {
     this.panel = document.getElementById('panel');
     this.title = document.getElementById('panelTitle');
     this.message = document.getElementById('message');
@@ -16,17 +16,28 @@ export class GameUI {
     this.score = document.getElementById('score');
     this.bossHealth = document.getElementById('bossHealth');
     this.crosshair = document.getElementById('crosshair');
+    this.pause = document.getElementById('pause');
+    this.mode = document.getElementById('controlMode');
+    this.onPause = onPause;
+    this.onModeChange = () => onModeChange(this.mode.value === 'touch');
     this.onStart = onStart;
     this.onRetry = onRetry;
     this.onMute = () => setMuted(this.mute.checked);
     this.start.addEventListener('click', this.onStart);
     this.retry.addEventListener('click', this.onRetry);
     this.mute.addEventListener('change', this.onMute);
+    this.pause.addEventListener('click', this.onPause);
+    this.mode.addEventListener('change', this.onModeChange);
+  }
+  setTouchMode(enabled) {
+    this.mode.value = enabled ? 'touch' : 'desktop';
+    document.body.classList.toggle('touch-mode', enabled);
   }
   setPhase(phase) {
     const visible = ['ready', 'paused', 'results'].includes(phase);
     this.panel.hidden = !visible;
     this.crosshair.hidden = visible;
+    this.pause.hidden = visible;
     this.start.hidden = phase === 'results';
     this.retry.hidden = phase !== 'results';
     this.stats.hidden = phase !== 'results';
@@ -75,5 +86,7 @@ export class GameUI {
     this.start.removeEventListener('click', this.onStart);
     this.retry.removeEventListener('click', this.onRetry);
     this.mute.removeEventListener('change', this.onMute);
+    this.pause.removeEventListener('click', this.onPause);
+    this.mode.removeEventListener('change', this.onModeChange);
   }
 }

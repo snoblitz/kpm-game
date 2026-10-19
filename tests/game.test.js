@@ -191,3 +191,51 @@ test('effects dispose geometry/materials and rebuilding never accumulates lights
   assert.equal(game.scene.children.length, children);
   assert.equal(game.scene.children.filter(child => child.isLight).length, 2);
 });
+
+test('touch starts, moves, shoots, pauses, resumes and retries without requesting pointer lock', () => {
+  const {game,advance}=fixture();
+  let lockRequests=0;
+  game.controls.lock=()=>{lockRequests++;};
+  game.touch={ input:{x:0,y:0,jump:false,run:false}, active:false,
+    setActive(active){ this.active=active; if(!active) Object.assign(this.input,{x:0,y:0,jump:false,run:false}); }
+  };
+  game.setTouchMode(true);
+  game.requestPlay();
+  assert.equal(game.run.phase,'playing');
+  assert.equal(game.controls.isLocked,false);
+  assert.equal(game.touch.active,true);
+  game.touch.input.y=0.5;
+  advance(0.05);
+  near(game.camera.position.z,-0.25);
+  game.touch.input.jump=true;
+  advance(0.05);
+  assert.ok(game.camera.position.y>2);
+  game.shoot();
+  assert.equal(game.run.shotsFired,1);
+  game.onBlur();
+  assert.equal(game.run.phase,'paused');
+  assert.deepEqual(game.touch.input,{x:0,y:0,jump:false,run:false});
+  game.shoot();
+  assert.equal(game.run.shotsFired,1);
+  const elapsed=game.run.elapsed;
+  advance(10);
+  near(game.run.elapsed,elapsed);
+  game.requestPlay();
+  game.run.startBoss();
+  game.finish();
+  assert.equal(game.touch.active,false);
+  game.retry();
+  assert.equal(game.run.phase,'playing');
+  assert.equal(game.run.shotsFired,0);
+  assert.equal(game.touch.active,true);
+  assert.equal(lockRequests,0);
+});
+
+test('analog diagonals preserve strength and full movement is bounded with mixed keyboard input', () => {
+  const {game}=fixture();
+  game.player.update(0.05,{},game.colliders,{x:0.3,y:0.4});
+  near(Math.hypot(game.camera.position.x,game.camera.position.z),0.25);
+  game.player.reset();
+  game.player.update(0.05,{KeyW:true},game.colliders,{x:1,y:1});
+  near(Math.hypot(game.camera.position.x,game.camera.position.z),0.5);
+});

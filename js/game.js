@@ -1,4 +1,5 @@
 import { PointerLockControls } from './PointerLockControls.js';
+import { TouchControls } from './touch-controls.js';
 import { LevelManager } from './level.js';
 import { EnemyManager } from './enemy.js';
 import { BossManager } from './boss.js';
@@ -18,17 +19,20 @@ export class Game {
     this.last = now();
     this.frame = null;
     this.disposed = false;
+    this.touchMode = false;
     this.colliders = [];
     this.onKeyDown = event => {
       if (!this.run.active) return;
+      if (event.code === 'Escape') { event.preventDefault(); this.pause(); return; }
       if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.code)) event.preventDefault();
       this.keys[event.code] = true;
     };
     this.onKeyUp = event => { delete this.keys[event.code]; };
-    this.onMouseDown = event => { if (event.button === 0) this.shoot(); };
+    this.onMouseDown = event => { if (event.pointerType === 'mouse' && event.button === 0) this.shoot(); };
     this.onBlur = () => this.pause();
     this.onVisibility = () => { if (document.hidden) this.pause(); };
     this.onResize = () => {
+      this.touch?.reset();
       this.camera.aspect = window.innerWidth / window.innerHeight;
       this.camera.updateProjectionMatrix();
       this.renderer.setSize(window.innerWidth, window.innerHeight);
@@ -55,7 +59,16 @@ export class Game {
       onChange: locked => this.onLockChange(locked),
       onError: () => this.ui.showMessage('Mouse capture was not granted. Click Start or Resume to try again.')
     });
-    this.ui = new GameUI({ onStart: () => this.requestPlay(), onRetry: () => this.retry() });
+    this.ui = new GameUI({ onStart: () => this.requestPlay(), onRetry: () => this.retry(),
+      onPause: () => this.pause(), onModeChange: enabled => this.setTouchMode(enabled) });
+    this.touch = new TouchControls({
+      root: document.getElementById('touchControls'), move: document.getElementById('movePad'),
+      stick: document.getElementById('moveStick'), look: document.getElementById('lookPad'),
+      fire: document.getElementById('fireButton'), jump: document.getElementById('jumpButton'),
+      onLook: (x, y, sensitivity) => this.controls.look(x, y, sensitivity), onFire: () => this.shoot(),
+      viewport: () => [window.innerWidth, window.innerHeight]
+    });
+    this.setTouchMode(window.matchMedia('(pointer: coarse)').matches);
     this.levelManager = new LevelManager(this.scene);
     this.enemyManager = new EnemyManager(this.scene);
     this.bossManager = new BossManager(this.scene);
@@ -71,22 +84,31 @@ export class Game {
     window.addEventListener('resize', this.onResize);
     window.addEventListener('pagehide', this.onPageHide);
     document.addEventListener('visibilitychange', this.onVisibility);
-    this.renderer.domElement.addEventListener('mousedown', this.onMouseDown);
+    this.renderer.domElement.addEventListener('pointerdown', this.onMouseDown);
     this.animate();
   }
 
   requestPlay() {
     if (this.run.phase !== 'ready' && this.run.phase !== 'paused') return;
     unlockAudio();
-    this.controls.lock();
-    // Start/resume only after the browser confirms pointer lock.
+    if (this.touchMode) this.beginPlay();
+    else this.controls.lock(); // Desktop waits for confirmed mouse capture.
+  }
+  setTouchMode(enabled) {
+    if (this.run.active) this.pause();
+    this.touchMode = enabled;
+    this.touch?.setActive(false);
+    this.ui?.setTouchMode?.(enabled);
   }
   onLockChange(locked) {
-    if (this.disposed) return;
+    if (this.disposed || this.touchMode) return;
     if (!locked) {
       this.pause(false);
       return;
     }
+    this.beginPlay();
+  }
+  beginPlay() {
     if (this.run.phase === 'ready') {
       this.run.start();
       playSound('start');
@@ -95,9 +117,11 @@ export class Game {
     }
     this.last = this.now();
     this.ui.setPhase(this.run.phase);
+    this.touch?.setActive(this.touchMode);
   }
   pause(unlock = true) {
     this.keys = {};
+    this.touch?.setActive(false);
     if (!this.run.active) return;
     // Account for the active fraction since the previous frame, then freeze.
     this.run.advance(Math.max(0, (this.now() - this.last) / 1000));
@@ -109,6 +133,7 @@ export class Game {
   }
   resetRun(rebuild = true) {
     this.keys = {};
+    this.touch?.setActive(false);
     this.effects.clear();
     this.enemyManager.clear();
     this.bossManager.clear();
@@ -140,7 +165,7 @@ export class Game {
     if (!this.run.active) return;
     this.run.advance(elapsed);
     const delta = Math.min(elapsed, MAX_FRAME_DELTA);
-    this.player.update(delta, this.keys, this.colliders);
+    this.player.update(delta, this.keys, this.colliders, this.touchMode ? this.touch.input : null);
     this.enemyManager.update(delta, this.colliders);
     if (this.run.phase === 'boss') this.bossManager.update(delta, this.camera.position, this.colliders);
     this.levelManager.updateSun(delta);
@@ -149,7 +174,7 @@ export class Game {
   }
 
   shoot() {
-    if (!this.controls.isLocked || !this.run.active) return;
+    if ((!this.controls.isLocked && !this.touchMode) || !this.run.active) return;
     this.run.recordShot();
     this.scene.updateMatrixWorld(true);
     this.raycaster.setFromCamera(this.center, this.camera);
@@ -182,6 +207,7 @@ export class Game {
   finish() {
     this.run.finish();
     this.keys = {};
+    this.touch?.setActive(false);
     this.effects.clear();
     this.levelManager.unlockDoor();
     const stats = this.run.summary();
@@ -200,7 +226,8 @@ export class Game {
     window.removeEventListener('resize', this.onResize);
     window.removeEventListener('pagehide', this.onPageHide);
     document.removeEventListener('visibilitychange', this.onVisibility);
-    this.renderer?.domElement.removeEventListener('mousedown', this.onMouseDown);
+    this.renderer?.domElement.removeEventListener('pointerdown', this.onMouseDown);
+    this.touch?.dispose();
     this.controls?.dispose();
     this.ui?.dispose();
     this.effects?.clear();

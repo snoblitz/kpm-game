@@ -19,9 +19,12 @@ export class PointerLockControls {
 
   onMouseMove(event) {
     if (!this.isLocked) return;
+    this.look(event.movementX || 0, event.movementY || 0);
+  }
+  look(deltaX, deltaY, sensitivity = 0.002) {
     this.euler.setFromQuaternion(this.camera.quaternion);
-    this.euler.y -= (event.movementX || 0) * 0.002;
-    this.euler.x -= (event.movementY || 0) * 0.002;
+    this.euler.y -= deltaX * sensitivity;
+    this.euler.x -= deltaY * sensitivity;
     // Avoid a zero horizontal forward vector at the exact poles.
     const limit = Math.PI / 2 - 0.001;
     this.euler.x = Math.max(-limit, Math.min(limit, this.euler.x));

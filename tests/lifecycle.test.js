@@ -67,3 +67,17 @@ test('audio reuses one context, disconnects finished nodes and closes on teardow
   audio.disposeAudio();
   assert.equal(closes, 1);
 });
+
+test('touch look uses the camera quaternion without mouse capture and clamps vertical pitch', () => {
+  globalThis.document = new EventTarget();
+  const camera = new THREE.PerspectiveCamera();
+  const controls = new PointerLockControls(camera, new EventTarget());
+  controls.look(40,0,Math.PI/390);
+  assert.ok(camera.getWorldDirection(new THREE.Vector3()).x>0);
+  controls.look(0,100000,Math.PI/390);
+  const rotation = new THREE.Euler().setFromQuaternion(camera.quaternion,'YXZ');
+  assert.ok(Math.abs(rotation.x)<Math.PI/2);
+  assert.ok(Number.isFinite(camera.quaternion.w));
+  assert.equal(controls.isLocked,false);
+  controls.dispose();
+});
